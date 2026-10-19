@@ -86,13 +86,15 @@ describe('appearance colors and brightness', () => {
 
   it('lightens and darkens surfaces from the theme values', () => {
     const base = (name) => (name === '--bg-panel' ? '#202020' : '#101010');
-    const lighter = appearanceVars(prefsOf({ uiBrightness: 100 }), 'dark', base);
+    // The theme's own accent is kept, so only the brightness tokens change.
+    const plain = { accentColor: 'blue' };
+    const lighter = appearanceVars(prefsOf({ ...plain, uiBrightness: 100 }), 'dark', base);
     expect(Object.keys(lighter).sort()).toEqual([...BRIGHTNESS_TOKENS].sort());
     expect(lighter['--bg-panel']).toBe(brighten('#202020', 100));
     expect(parseInt(lighter['--bg-panel'].slice(1, 3), 16)).toBeGreaterThan(0x20);
-    const darker = appearanceVars(prefsOf({ uiBrightness: -100 }), 'dark', base);
+    const darker = appearanceVars(prefsOf({ ...plain, uiBrightness: -100 }), 'dark', base);
     expect(parseInt(darker['--bg-panel'].slice(1, 3), 16)).toBeLessThan(0x20);
-    expect(appearanceVars(prefsOf({ uiBrightness: 0 }), 'dark', base)).toEqual({});
+    expect(appearanceVars(prefsOf({ ...plain, uiBrightness: 0 }), 'dark', base)).toEqual({});
   });
 
   it('stores color sets without unset colors and compares them field by field', () => {

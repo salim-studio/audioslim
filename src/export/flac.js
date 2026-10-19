@@ -60,7 +60,7 @@ export class FlacWriter {
     const head = concatBytes([
       ascii('fLaC'),
       metadataBlock(0, info, false),
-      metadataBlock(4, vorbisComment(this.meta, 'Audio Studio FLAC encoder'), false),
+      metadataBlock(4, vorbisComment(this.meta, 'audioslim+ FLAC encoder'), false),
       metadataBlock(1, new Uint8Array(4096), true),
     ]);
     return new Blob([head, ...this.sink.take()], { type: 'audio/flac' });

@@ -234,4 +234,4 @@ class MixerProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('audio-studio-mixer', MixerProcessor);
+registerProcessor('audioslim-mixer', MixerProcessor);

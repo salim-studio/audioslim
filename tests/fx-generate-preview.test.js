@@ -1,6 +1,6 @@
 // Generate dialogs: preview playback of the generated signal before it is inserted.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { previewPlayer, generateTonesCommand, synthesizeSpeech, clearSpeechTake, PREVIEW_SECONDS } from '../src/effects/generate-ui.js';
+import { previewPlayer, generateTonesCommand, PREVIEW_SECONDS } from '../src/effects/generate-ui.js';
 import { fakeApp } from './fx-helpers.js';
 
 let played;
@@ -70,27 +70,5 @@ describe('generator preview', () => {
     expect(PREVIEW_SECONDS).toBeLessThanOrEqual(30);
     dlg.querySelector('.dialog-head .icon-btn').click();
     expect(await run).toBeNull();
-  });
-});
-
-describe('speech takes', () => {
-  it('reuses the previewed take and reshapes it without asking the service again', async () => {
-    await import('./fx-wasm.js');
-    clearSpeechTake();
-    const rate = 16000;
-    const tone = Float32Array.from({ length: rate / 2 }, (_, i) => 0.5 * Math.sin((2 * Math.PI * 220 * i) / rate));
-    const { encodeWav } = await import('../src/audio/wav.js');
-    const wav = await encodeWav({ sampleRate: rate, channels: [tone], bitDepth: 16 }).arrayBuffer();
-    globalThis.fetch = vi.fn(async () => ({ ok: true, arrayBuffer: async () => wav.slice(0) }));
-    const sdk = { ai: { txt2speech: vi.fn(async () => ({ src: 'https://example.test/a.wav' })) } };
-    const s = { text: 'Hello', voice: 'polly:Joanna', language: 'en-US', neural: false, speed: 100, volume: 100 };
-    const a = await synthesizeSpeech(sdk, s, rate);
-    const b = await synthesizeSpeech(sdk, { ...s }, rate);
-    expect(b).toBe(a);
-    const quiet = await synthesizeSpeech(sdk, { ...s, volume: 50 }, rate);
-    expect(sdk.ai.txt2speech).toHaveBeenCalledTimes(1);
-    expect(Math.max(...quiet.outs[0])).toBeCloseTo(Math.max(...a.outs[0]) / 2, 2);
-    await synthesizeSpeech(sdk, { ...s, text: 'Other' }, rate);
-    expect(sdk.ai.txt2speech).toHaveBeenCalledTimes(2);
   });
 });

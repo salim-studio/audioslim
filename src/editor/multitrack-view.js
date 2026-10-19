@@ -1907,7 +1907,7 @@ export class MultitrackView {
     const s = this.surface;
     const accepts = (e) => {
       const types = [...(e.dataTransfer?.types || [])];
-      return types.includes('application/x-audio-studio-file') || types.includes('Files');
+      return types.includes('application/x-audioslim-file') || types.includes('Files');
     };
     const place = (e) => {
       const { x, y } = this.#local(e);
@@ -1933,7 +1933,7 @@ export class MultitrackView {
       const p = place(e);
       this.dropHint = null;
       this.invalidate('overlay');
-      const id = e.dataTransfer.getData('application/x-audio-studio-file');
+      const id = e.dataTransfer.getData('application/x-audioslim-file');
       const mt = this.app.multitrack;
       if (id) {
         const doc = this.app.documents.find((d) => d.id === id);

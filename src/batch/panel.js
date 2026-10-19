@@ -1,16 +1,15 @@
-// Batch Process panel: a list of files (open documents, files from this
-// device or from Puter), a Favorite to apply to each (or none), export
-// settings (format, sample type, location: a Puter folder, or downloads,
-// zipped when there are several files), and Run with per-file progress,
-// status and Cancel. Decoding, effects and encoding all run in workers, and
-// files are processed one at a time so memory stays bounded.
+// Batch Process panel: a list of files (open documents or files from this
+// device), a Favorite to apply to each (or none), export settings (format,
+// sample type, location: a folder on this device, or downloads, zipped when
+// there are several files), and Run with per-file progress, status and Cancel.
+// Decoding, effects and encoding all run in workers, and files are processed
+// one at a time so memory stays bounded.
 
 import { h, announce } from '../lib/dom.js';
 import { icon } from '../ui/icons.js';
 import { pickLocalFiles, openAccept } from '../storage/files.js';
-import * as puter from '../storage/puter.js';
 import { loadFavorites } from '../effects/favorites.js';
-import { PUTER_DRAG_TYPE, resolveMediaItems } from '../panels/media-browser.js';
+import { MEDIA_DRAG_TYPE, resolveMediaItems } from '../panels/media-browser.js';
 import { STATUS_LABELS, addSources, removeItems, resetItems, batchSettings, plannedNames, describeBatch, runQueue, sourceSampleType } from './queue.js';
 import { probeAudio, HEAD_BYTES } from '../storage/probe.js';
 import { processItem, batchFavoriteProblem } from './process.js';
@@ -29,10 +28,9 @@ export function batchPanel(app) {
   // ------------------------------------------------------------ toolbar
   const addOpenBtn = h('button.btn', { type: 'button', onclick: () => addOpen(), title: 'Add every open audio file', 'aria-label': 'Add Open Files' }, icon('file-audio', 14), h('span', 'Add Open Files'));
   const addLocalBtn = h('button.btn', { type: 'button', onclick: () => addLocal(), title: 'Add audio files from this device', 'aria-label': 'Add Files from this device' }, icon('hard-drive', 14), h('span', 'Add Files...'));
-  const addPuterBtn = h('button.btn', { type: 'button', onclick: () => addPuter(), title: 'Add audio files from Puter', 'aria-label': 'Add Files from Puter' }, icon('cloud', 14), h('span', 'From Puter...'));
   const removeBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Remove selected files', title: 'Remove selected files', onclick: () => removeSelected() }, icon('trash-2', 14));
   const clearBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Clear the list', title: 'Clear the list', onclick: () => clearAll() }, icon('x', 14));
-  const toolbar = h('div.panel-toolbar.batch-toolbar', addOpenBtn, addLocalBtn, addPuterBtn, h('div.spacer'), removeBtn, clearBtn);
+  const toolbar = h('div.panel-toolbar.batch-toolbar', addOpenBtn, addLocalBtn, h('div.spacer'), removeBtn, clearBtn);
 
   // --------------------------------------------------------------- list
   const body = h('tbody');
@@ -71,7 +69,7 @@ export function batchPanel(app) {
   const dragTypes = (e) => [...(e.dataTransfer?.types || [])];
   el.addEventListener('dragover', (e) => {
     const t = dragTypes(e);
-    if (t.includes('Files') || t.includes(PUTER_DRAG_TYPE)) {
+    if (t.includes('Files') || t.includes(MEDIA_DRAG_TYPE)) {
       e.preventDefault();
       el.classList.add('drop');
     }
@@ -81,18 +79,16 @@ export function batchPanel(app) {
   });
   el.addEventListener('drop', (e) => {
     el.classList.remove('drop');
-    if (dragTypes(e).includes(PUTER_DRAG_TYPE)) {
+    if (dragTypes(e).includes(MEDIA_DRAG_TYPE)) {
       e.preventDefault();
       let list = [];
       try {
-        list = JSON.parse(e.dataTransfer.getData(PUTER_DRAG_TYPE));
+        list = JSON.parse(e.dataTransfer.getData(MEDIA_DRAG_TYPE));
       } catch {
         return;
       }
-      add(list.filter((x) => x?.path && !x.local && !puter.isDir(x)).map((x) => ({ type: 'puter', path: x.path, item: x })));
       // Device folder files resolve to Files asynchronously.
-      const device = list.filter((x) => x?.local);
-      if (device.length) resolveMediaItems(device).then((files) => files.length && add(files.map((file) => ({ type: 'local', file }))));
+      resolveMediaItems(list).then((files) => files.length && add(files.map((file) => ({ type: 'local', file }))));
       return;
     }
     const files = [...(e.dataTransfer?.files || [])];
@@ -118,15 +114,6 @@ export function batchPanel(app) {
   async function addLocal() {
     const files = await pickLocalFiles({ accept: openAccept(), multiple: true });
     if (files.length) add(files.filter((f) => !/\.asesx$/i.test(f.name)).map((file) => ({ type: 'local', file })));
-  }
-  async function addPuter() {
-    try {
-      if (!puter.isSignedIn() && !(await puter.signIn().catch(() => false))) return;
-      const picked = await puter.pickFiles({ multiple: true, accept: openAccept() });
-      add(picked.filter((f) => !puter.isDir(f) && !/\.asesx$/i.test(f.name || '')).map((item) => ({ type: 'puter', path: item.path, item })));
-    } catch (err) {
-      app.notify(err?.message || 'Could not open the Puter file picker.', { error: true });
-    }
   }
   function removeSelected() {
     if (running || !selected.size) return;
@@ -256,7 +243,7 @@ export function batchPanel(app) {
 
   function renderRows() {
     if (!items.length) {
-      body.replaceChildren(h('tr', h('td.empty-row', { colspan: '4' }, h('span.empty-text', 'Add open files, files from this device or from Puter, or drop files here.'))));
+      body.replaceChildren(h('tr', h('td.empty-row', { colspan: '4' }, h('span.empty-text', 'Add open files or files from this device, or drop files here.'))));
       return;
     }
     probeLocal();
@@ -272,7 +259,7 @@ export function batchPanel(app) {
             onclick: (e) => select(i, e),
             onkeydown: (e) => rowKeys(e, i),
           },
-          h('td.batch-name', { title: item.source.type === 'puter' ? item.source.path : item.name }, h('span.name-cell', icon(item.source.type === 'doc' ? 'file-audio' : item.source.type === 'range' ? 'bookmark' : item.source.type === 'puter' ? 'cloud' : 'hard-drive', 14), h('span', item.name))),
+          h('td.batch-name', { title: item.name }, h('span.name-cell', icon(item.source.type === 'doc' ? 'file-audio' : item.source.type === 'range' ? 'bookmark' : 'hard-drive', 14), h('span', item.name))),
           h('td.batch-type', sourceSampleType(item)),
           h('td.batch-out', { title: outputs[i] }, outputs[i]),
           statusCell(item),
@@ -289,8 +276,6 @@ export function batchPanel(app) {
     exportText.textContent = `${describeBatch(s)}; ${locationText(s)}`;
     addOpenBtn.disabled = busy;
     addLocalBtn.disabled = busy;
-    addPuterBtn.disabled = busy;
-    addPuterBtn.hidden = !puter.sdk();
     removeBtn.disabled = busy || !selected.size;
     clearBtn.disabled = busy || !items.length;
     favSel.disabled = busy;

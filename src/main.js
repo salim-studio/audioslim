@@ -15,12 +15,6 @@ for (const install of FEATURES) install(app);
 createShell(app, document.getElementById('app'));
 app.setStatus(`Launched in ${(performance.now() / 1000).toFixed(2)} seconds`);
 
-// Files handed to the app by the Puter desktop ("Open with").
-const p = typeof window !== 'undefined' ? window.puter : null;
-if (p?.ui?.onLaunchedWithItems) {
-  p.ui.onLaunchedWithItems((items) => openFiles(app, items));
-}
-
 // Retire the service worker from the previous version of this app.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations?.().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});

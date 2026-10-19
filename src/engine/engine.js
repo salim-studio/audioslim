@@ -104,7 +104,7 @@ export class Engine extends Emitter {
     this.requestedRate = rate;
     this.rate = ctx.sampleRate;
     await ctx.audioWorklet.addModule(mixerUrl);
-    const node = new AudioWorkletNode(ctx, 'audio-studio-mixer', {
+    const node = new AudioWorkletNode(ctx, 'audioslim-mixer', {
       numberOfInputs: 0,
       numberOfOutputs: 1,
       outputChannelCount: [2],
@@ -378,7 +378,7 @@ export class Engine extends Emitter {
     });
     await this.ctx.audioWorklet.addModule(captureUrl);
     const src = this.ctx.createMediaStreamSource(stream);
-    const node = new AudioWorkletNode(this.ctx, 'audio-studio-capture', { numberOfOutputs: 0 });
+    const node = new AudioWorkletNode(this.ctx, 'audioslim-capture', { numberOfOutputs: 0 });
     const deviceChannels = stream.getAudioTracks()[0]?.getSettings().channelCount || 1;
     const map = this.inputMap;
     let mapped = false;

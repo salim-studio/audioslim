@@ -7,13 +7,13 @@ import { AudioFile } from '../model/audio-file.js';
 import { Channel } from '../audio/channel.js';
 import { baseName } from '../audio/decode.js';
 import { openDialog } from '../ui/dialog.js';
-import { pickLocalFiles, downloadBlob, openFiles } from '../storage/files.js';
+import { pickLocalFiles, downloadBlob } from '../storage/files.js';
+import { canPickFolder, currentFolderName, writeInFolder } from '../storage/device-save.js';
 import { FORMATS, getFormat, sanitizeFileName, withExtension } from '../export/formats.js';
 import { exportAudio } from '../export/export.js';
 import { withProgress } from '../export/progress.js';
 import { exportOptionsFor, batchSettings, uniqueName } from '../batch/queue.js';
 import { zipStore } from '../lib/zip.js';
-import * as puter from '../storage/puter.js';
 
 const audio = (app) => (app.active?.kind === 'audio' ? app.active : null);
 
@@ -180,8 +180,8 @@ async function exportRangesDialog(app) {
   const naming = h('select.select', { 'aria-label': 'File names' }, h('option', { value: 'name' }, 'Marker names'), h('option', { value: 'prefix' }, 'Prefix and number'));
   const prefix = h('input.input', { type: 'text', value: baseName(doc.name), 'aria-label': 'Name prefix', disabled: true });
   naming.addEventListener('change', () => (prefix.disabled = naming.value !== 'prefix'));
-  const sdk = Boolean(puter.sdk());
-  const loc = h('select.select', { 'aria-label': 'Location' }, h('option', { value: 'puter', disabled: !sdk }, sdk ? `Puter folder (~/${puter.APP_DIR})` : 'Puter folder (not available)'), h('option', { value: 'download', selected: !sdk || saved.location !== 'puter' }, 'Download (ZIP for several files)'));
+  const canFolder = canPickFolder();
+  const loc = h('select.select', { 'aria-label': 'Location' }, h('option', { value: 'device', disabled: !canFolder }, canFolder ? 'A folder on this device' : 'A folder on this device (not supported by this browser)'), h('option', { value: 'download', selected: !canFolder || saved.location !== 'device' }, 'Download (ZIP for several files)'));
   const r = await openDialog({
     title: 'Export Audio within Range Markers',
     body: h(
@@ -205,11 +205,7 @@ async function exportRangesDialog(app) {
   const settings = { ...saved, format: getFormat(fmt.value).id };
   const options = exportOptionsFor(settings, { sampleRate: doc.sampleRate, channels: doc.channelCount });
   const names = rangeExportNames(chosen, { naming: naming.value, prefix: prefix.value, format: settings.format });
-  let dir = null;
-  if (loc.value === 'puter') {
-    if (!puter.isSignedIn() && !(await puter.signIn().catch(() => false))) return;
-    dir = settings.dir || (await puter.appDir());
-  }
+  const toFolder = loc.value === 'device';
   const files = [];
   const done = await withProgress(`Exporting ${chosen.length} range${chosen.length === 1 ? '' : 's'}`, async (onProgress, signal) => {
     for (let i = 0; i < chosen.length; i++) {
@@ -219,8 +215,9 @@ async function exportRangesDialog(app) {
         options,
         { signal, onProgress: (f) => onProgress((i + f) / chosen.length) },
       );
-      if (dir) await puter.writeFile(puter.joinPath(dir, names[i]), blob);
-      else files.push({ name: names[i], blob });
+      const written = toFolder ? await writeInFolder(names[i], blob) : null;
+      if (written) continue;
+      files.push({ name: names[i], blob });
     }
     return true;
   });
@@ -231,7 +228,7 @@ async function exportRangesDialog(app) {
     for (const f of files) entries.push({ name: f.name, data: new Uint8Array(await f.blob.arrayBuffer()) });
     downloadBlob(zipStore(entries), `${baseName(doc.name)} Ranges.zip`);
   }
-  app.setStatus(dir ? `Exported ${chosen.length} files to ${dir}` : `Exported ${chosen.length} file${chosen.length === 1 ? '' : 's'}`);
+  app.setStatus(toFolder && !files.length ? `Exported ${chosen.length} files to ${currentFolderName() || 'the chosen folder'}` : `Exported ${chosen.length} file${chosen.length === 1 ? '' : 's'}`);
 }
 
 // ------------------------------------------------------------ registration
@@ -267,7 +264,7 @@ export function installFileExtraCommands(app) {
     {
       id: 'file.revealInMedia',
       label: 'Reveal in Media Browser',
-      enabled: (a) => a.active?.source?.type === 'puter' && Boolean(a.active.source.path) && a.panels.has('media'),
+      enabled: (a) => a.active?.source?.type === 'local' && Boolean(a.active.source.path) && a.panels.has('media'),
       run: async () => {
         app.dock.openPanel('media');
         await app.dock.instance('media')?.reveal?.(app.active.source.path);
@@ -281,12 +278,7 @@ export function installFileExtraCommands(app) {
         const o = audio(app).origin;
         const open = app.documents.find((d) => d.kind === 'session' && (d.id === o.sessionId || (o.path && d.source?.path === o.path)));
         if (open) return app.activate(open);
-        if (!o.path) return app.notify(`The session "${o.name}" is no longer open.`, { error: true });
-        try {
-          await openFiles(app, [Object.assign(await puter.readFile(o.path), { name: o.name })]).then((docs) => docs[0] && (docs[0].source = { type: 'puter', path: o.path }));
-        } catch {
-          app.notify(`"${o.name}" could not be opened. It may have been moved or deleted.`, { error: true });
-        }
+        app.notify(`The session "${o.name}" is no longer open.`, { error: true });
       },
     },
     {

@@ -193,10 +193,9 @@ describe('media browser helpers', () => {
     expect(filterItems(items, { audioOnly: false, query: 'NO' }).map((i) => i.name)).toEqual(['notes.txt']);
   });
   it('splits paths into breadcrumbs', () => {
-    expect(crumbs('/demo/AudioStudio/Takes')).toEqual([
-      { name: 'demo', path: '/demo' },
-      { name: 'AudioStudio', path: '/demo/AudioStudio' },
-      { name: 'Takes', path: '/demo/AudioStudio/Takes' },
+    expect(crumbs('local:demo/Takes', 'demo')).toEqual([
+      { name: 'demo', path: 'local:demo' },
+      { name: 'Takes', path: 'local:demo/Takes' },
     ]);
   });
 });

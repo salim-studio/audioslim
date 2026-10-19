@@ -5,7 +5,7 @@
 //
 // The media pool maps source ids to { id, name, channels (at the session
 // rate), sampleRate (of the original file), docId (linked AudioFile, if
-// open), path (Puter path when saved), offline }. It is not part of the undo
+// open), path (the file's path when saved), offline }. It is not part of the undo
 // state: sources only ever get added, and edits in the Waveform editor flow
 // into the clips that use them.
 
@@ -23,7 +23,7 @@ export class Session extends Emitter {
    * @param {string} o.name
    * @param {number} [o.sampleRate]
    * @param {object} [o.state] initial session state (see session-edits.js)
-   * @param {object} [o.source] { type: 'puter'|'local'|'new', path }
+   * @param {object} [o.source] { type: 'local'|'device'|'new', path }
    */
   constructor({ name = 'Untitled Session.asesx', sampleRate = 48000, bitDepth = 32, state, tracks, template, autoCrossfade, masterChannels, source = { type: 'new' } } = {}) {
     super();

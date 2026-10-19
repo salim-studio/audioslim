@@ -34,7 +34,7 @@ describe('effect presets', () => {
   it('persists through localStorage-style storage', () => {
     const prefs = memoryPrefs();
     savePreset(prefs, def, 'Kept', { left: 1 });
-    const raw = prefs.storage.getItem('audio-studio:prefs');
+    const raw = prefs.storage.getItem('audioslim:prefs');
     expect(JSON.parse(raw).fxPresets.amplify[0].name).toBe('Kept');
   });
   it('remembers the last applied values, defaulting to the first preset', () => {

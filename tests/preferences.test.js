@@ -80,9 +80,9 @@ describe('preference storage', () => {
   });
 
   it('rejects other files and skips values of the wrong type', () => {
-    expect(() => validateSettings({ hello: 1 })).toThrow(/not an Audio Studio settings file/);
+    expect(() => validateSettings({ hello: 1 })).toThrow(/not an audioslim\+ settings file/);
     expect(() => validateSettings([])).toThrow();
-    const { values, skipped } = validateSettings({ kind: 'audio-studio-settings', version: 1, prefs: { tempo: 'fast', hud: false, 'bad key!': 1, recent: [], someEffectPresets: { a: 1 } } });
+    const { values, skipped } = validateSettings({ kind: 'audioslim-settings', version: 1, prefs: { tempo: 'fast', hud: false, 'bad key!': 1, recent: [], someEffectPresets: { a: 1 } } });
     expect(values).toEqual({ hud: false, someEffectPresets: { a: 1 } });
     expect(skipped.sort()).toEqual(['bad key!', 'recent', 'tempo']);
   });
@@ -290,7 +290,10 @@ describe('appearance', () => {
     expect(vars['--wave']).toBe('#ff0000');
     expect(vars['--bg-editor']).toBe('#000000');
     expect(vars['--sel-bg']).toBe('rgba(0, 255, 0, 0.24)');
-    expect(appearanceVars({ get: (k) => DEFAULTS[k] }, 'dark')).toEqual({});
+    // The theme's own accent needs no overrides.
+    expect(appearanceVars({ get: (k) => (k === 'accentColor' ? 'blue' : DEFAULTS[k]) }, 'dark')).toEqual({});
+    // The brand accent does.
+    expect(appearanceVars({ get: (k) => DEFAULTS[k] }, 'dark')['--accent']).toBe('#86d93f');
   });
 });
 

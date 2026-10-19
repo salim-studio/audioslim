@@ -36,6 +36,15 @@
   display: inline-flex;
 }
 
+.app-name {
+  letter-spacing: 0.01em;
+}
+
+.app-name-plus {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .app-icon {
   display: block;
   flex: none;

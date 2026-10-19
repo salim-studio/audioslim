@@ -131,7 +131,7 @@ export const CATEGORIES = [
     sections: [
       {
         items: [
-          check('autosave', 'Keep recovery copies of unsaved audio files in this browser', { help: 'If the tab closes unexpectedly, Audio Studio offers to restore them the next time it starts.' }),
+          check('autosave', 'Keep recovery copies of unsaved audio files in this browser', { help: 'If the tab closes unexpectedly, audioslim+ offers to restore them the next time it starts.' }),
           select('autosaveInterval', 'Save a recovery copy every', opts([[15, '15 seconds'], [30, '30 seconds'], [60, '1 minute'], [120, '2 minutes'], [300, '5 minutes'], [600, '10 minutes']]), { enabledIf: (p) => p.get('autosave') !== false }),
           { type: 'custom', label: 'Recover unsaved files', keys: [], keywords: 'restore crash recovery', render: recoverButton },
         ],
@@ -139,7 +139,7 @@ export const CATEGORIES = [
       {
         title: 'Multitrack Session Backups',
         items: [
-          check('sessionBackup', 'Back up open multitrack sessions automatically', { keywords: 'backup history versions', help: 'Backups are kept in this browser, with the audio the session uses. A session that closed with unsaved changes is offered for restore the next time Audio Studio starts.' }),
+          check('sessionBackup', 'Back up open multitrack sessions automatically', { keywords: 'backup history versions', help: 'Backups are kept in this browser, with the audio the session uses. A session that closed with unsaved changes is offered for restore the next time audioslim+ starts.' }),
           number('sessionBackupInterval', 'Back up every', { min: 1, max: 120, step: 1, unit: 'minutes', enabledIf: (p) => p.get('sessionBackup') !== false }),
           number('sessionBackupMax', 'Backups kept per session', { min: 1, max: 100, step: 1, enabledIf: (p) => p.get('sessionBackup') !== false, help: 'The oldest backup is deleted when a session has more.' }),
           { type: 'custom', label: 'Session backups', keys: [], keywords: 'restore backup session open', render: restoreBackupButton },
@@ -198,7 +198,7 @@ export const CATEGORIES = [
     sections: [
       {
         title: 'Browser Storage',
-        items: [{ type: 'custom', bare: true, label: 'Storage used by Audio Studio in this browser', keys: [], keywords: 'disk cache quota space persistent storage recovery delete clear', render: storageInfo }],
+        items: [{ type: 'custom', bare: true, label: 'Storage used by audioslim+ in this browser', keys: [], keywords: 'disk cache quota space persistent storage recovery delete clear', render: storageInfo }],
       },
     ],
   },
@@ -587,7 +587,7 @@ function storageInfo({ app }) {
   return h(
     'div.prefs-ext',
     h('div.form-grid', h('label', 'Used:'), used, h('label', 'Available:'), free, h('label', 'Storage:'), h('div.prefs-inline', persisted, persist), h('label', 'Unrecovered files:'), h('div.prefs-inline', recovery, clean)),
-    h('p.prefs-help', 'Recovery copies of unsaved files live in this browser. Saved files live in Puter or on this device.'),
+    h('p.prefs-help', 'Recovery copies of unsaved files live in this browser. Saved files are written to this device.'),
   );
 }
 

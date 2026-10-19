@@ -7,7 +7,7 @@ import { openDialog } from '../ui/dialog.js';
 
 const REPO = 'https://github.com/salim-studio/audioslim';
 export const SOURCE_URL = REPO;
-export const ISSUES_URL = `${REPO}/issues/new?labels=audio-studio&title=${encodeURIComponent('Audio Studio: ')}`;
+export const ISSUES_URL = `${REPO}/issues/new?labels=audioslim&title=${encodeURIComponent('audioslim+: ')}`;
 
 /** Getting Started topics: a title, an icon and a few steps, each naming the commands it uses. */
 export const GUIDE = [
@@ -18,7 +18,7 @@ export const GUIDE = [
       ['Open audio with File > Open, or drop files anywhere in the window.', 'file.open'],
       ['Drag across the waveform to select time; drag near the top or bottom of a channel to select just that channel.', null],
       ['Cut, copy, paste and delete work on the selection; every step can be undone in the History panel.', 'edit.undo'],
-      ['Save back to Puter with File > Save, or export another format with File > Export.', 'file.save'],
+      ['Save back to the same file with File > Save, or export another format with File > Export.', 'file.save'],
     ],
   },
   {
@@ -72,7 +72,7 @@ function guideDialog(app) {
     wide: true,
     body: h(
       'div.guide',
-      h('p.muted', 'Audio Studio has two editors: the Waveform editor for changing one file sample by sample, and the Multitrack editor for arranging and mixing many clips without changing the source files. Switch between them with the buttons at the top left.'),
+      h('p.muted', 'audioslim+ has two editors: the Waveform editor for changing one file sample by sample, and the Multitrack editor for arranging and mixing many clips without changing the source files. Switch between them with the buttons at the top left.'),
       h('div.guide-grid', topics),
       h('p.faint', 'Search commands with the box in the toolbar, and see every shortcut in Help > Keyboard Shortcuts.'),
     ),

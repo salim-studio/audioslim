@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateTones, generateNoise, waveSample, rng, dbToGain } from '../src/effects/generate.js';
-import { placeGenerated, speechOptions, puterErrorMessage } from '../src/effects/generate-ui.js';
+import { placeGenerated } from '../src/effects/generate-ui.js';
 import { AudioFile } from '../src/model/audio-file.js';
 import { Channel } from '../src/audio/channel.js';
 import { fakeApp } from './fx-helpers.js';
@@ -120,19 +120,5 @@ describe('placing generated audio', () => {
     placeGenerated(app, [new Float32Array(5).fill(1)], 8000, { label: 'Generate Noise', name: 'Noise', placement: 'replace' });
     expect(doc.length).toBe(95);
     expect(doc.history.entries.at(-1).label).toBe('Generate Noise');
-  });
-});
-
-describe('speech helpers', () => {
-  it('maps voice choices to txt2speech options', () => {
-    expect(speechOptions('polly:Joanna', 'en-US', true)).toEqual({ provider: 'aws-polly', voice: 'Joanna', language: 'en-US', engine: 'neural' });
-    expect(speechOptions('openai:nova', 'fr-FR', false)).toMatchObject({ provider: 'openai', voice: 'nova' });
-  });
-  it('reads messages from the shapes Puter errors take', () => {
-    expect(puterErrorMessage('boom')).toBe('boom');
-    expect(puterErrorMessage(new Error('bad'))).toBe('bad');
-    expect(puterErrorMessage({ error: { message: 'insufficient funds' } })).toBe('insufficient funds');
-    expect(puterErrorMessage({ code: 'bad_request' })).toBe('Error bad_request');
-    expect(puterErrorMessage(null)).toBe('Unknown error.');
   });
 });

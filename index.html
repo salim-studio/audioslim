@@ -5,22 +5,22 @@
     <script>
       // Resolve the theme before first paint to avoid a flash.
       try {
-        var t = (JSON.parse(localStorage.getItem('audio-studio:prefs') || '{}').theme) || 'system';
+        var t = (JSON.parse(localStorage.getItem('audioslim:prefs') || '{}').theme) || 'system';
         var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.themeResolved = dark ? 'dark' : 'light';
       } catch (e) {}
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#161616" />
-    <title>Audio Studio</title>
-    <meta name="description" content="Audio Studio is a waveform and multitrack audio editor in your browser. Record, edit, restore, mix and master audio, with spectral editing and studio effects, saved to your own Puter cloud." />
-    <meta name="keywords" content="online audio editor, multitrack audio editor, waveform editor, spectral editor, noise reduction, record audio online, podcast editor, Puter app" />
+    <meta name="theme-color" content="#0b0e13" />
+    <title>audioslim+</title>
+    <meta name="description" content="audioslim+ is a waveform and multitrack audio editor in your browser. Record, edit, restore, mix and master audio, with spectral editing and studio effects. Everything runs on your device." />
+    <meta name="keywords" content="online audio editor, multitrack audio editor, waveform editor, spectral editor, noise reduction, record audio online, podcast editor" />
     <link rel="canonical" href="https://salim-studio.github.io/audioslim/" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Audio Studio" />
-    <meta property="og:title" content="Audio Studio: waveform and multitrack audio editing in your browser" />
-    <meta property="og:description" content="Record, edit, restore, mix and master audio in the browser, saved to your own cloud." />
+    <meta property="og:site_name" content="audioslim+" />
+    <meta property="og:title" content="audioslim+: waveform and multitrack audio editing in your browser" />
+    <meta property="og:description" content="Record, edit, restore, mix and master audio in the browser. Everything stays on your device." />
     <meta property="og:url" content="https://salim-studio.github.io/audioslim/" />
     <meta property="og:image" content="https://salim-studio.github.io/audioslim/social-graph.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -32,12 +32,11 @@
     <link rel="manifest" href="./manifest.json" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Audio Studio" />
-    <script src="https://js.puter.com/v2/"></script>
+    <meta name="apple-mobile-web-app-title" content="audioslim+" />
   </head>
   <body>
     <div id="app" class="app"></div>
-    <noscript>Audio Studio needs JavaScript to run.</noscript>
+    <noscript>audioslim+ needs JavaScript to run.</noscript>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

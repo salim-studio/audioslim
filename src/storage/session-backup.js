@@ -7,7 +7,7 @@
 // at most `max` backups (oldest dropped first) and media no backup refers to
 // are deleted.
 //
-// Layout in <OPFS>/audio-studio-session-backups:
+// Layout in <OPFS>/audioslim-session-backups:
 //   <key>.json          manifest: { version, key, group, tab, name, source, savedAt, dirty, offered, text, media: [{ file, key, frames, channels }] }
 //   media/<mkey>.wav    one source revision
 //
@@ -23,7 +23,7 @@ import { serializeSession } from '../model/session-io.js';
 import { sessionFromText } from '../multitrack/storage.js';
 import { LOCK_PREFIX } from './autosave.js';
 
-export const BACKUP_DIR = 'audio-studio-session-backups';
+export const BACKUP_DIR = 'audioslim-session-backups';
 const VERSION = 1;
 const BLOCK = 1 << 16;
 /** Backups older than this are deleted on start whatever the count. */
@@ -218,7 +218,7 @@ export function installSessionBackup(app, { store, tab, now = () => Date.now() }
       group: `${tab}-${doc.id}`.replace(/[^a-z0-9-]/gi, ''),
       tab,
       name: parsed.name || doc.name,
-      source: doc.source?.type === 'puter' ? { type: 'puter', path: doc.source.path } : { type: doc.source?.type || 'new' },
+      source: doc.source?.type === 'local' && doc.source.path ? { type: 'local', path: doc.source.path } : { type: doc.source?.type || 'new' },
       savedAt: at,
       dirty: Boolean(doc.dirty),
       offered: false,
@@ -321,8 +321,8 @@ export function installSessionBackup(app, { store, tab, now = () => Date.now() }
         const key = files.get(src.file);
         return key ? store.readMedia(key) : null;
       });
-      // Saving a restored session asks where unless it came from Puter; its media are written again.
-      if (m.source?.type === 'puter') session.source = { type: 'puter', path: m.source.path };
+      // Saving a restored session asks where; its media are written again.
+      if (m.source?.type === 'local' && m.source.path) session.source = { type: 'local', path: m.source.path };
       session.savedState = null;
       app.addDocument(session);
       return session;
@@ -343,7 +343,7 @@ export async function sessionRestoreDialog(app, controller, manifests) {
     title: 'Restore Multitrack Sessions',
     body: h(
       'div.io-recover',
-      h('p', 'These sessions had unsaved changes when Audio Studio last closed. Their latest backups are in this browser:'),
+      h('p', 'These sessions had unsaved changes when audioslim+ last closed. Their latest backups are in this browser:'),
       h(
         'ul.io-recover-list',
         manifests.map((m, i) => h('li', h('label.check', checks[i], h('span.io-recover-name', m.name), h('span.muted', ` ${m.media.length} media file${m.media.length === 1 ? '' : 's'}, backed up ${when(m.savedAt)}`)))),

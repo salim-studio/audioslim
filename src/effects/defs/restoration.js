@@ -274,16 +274,16 @@ export function packNoisePrint(print, curve = null) {
 
 /** A noise print as plain JSON (Save Noise Print). */
 export function serializeNoisePrint(print) {
-  return { type: 'audio-studio-noise-print', version: 1, rate: print.rate, fftSize: print.fftSize, frames: print.frames, seconds: print.seconds, channels: print.channels.map((c) => Array.from(c, (v) => Number(v.toPrecision(6)))) };
+  return { type: 'audioslim-noise-print', version: 1, rate: print.rate, fftSize: print.fftSize, frames: print.frames, seconds: print.seconds, channels: print.channels.map((c) => Array.from(c, (v) => Number(v.toPrecision(6)))) };
 }
 
 /** Reads a saved noise print (throws on anything else). */
 export function parseNoisePrint(json) {
   const o = typeof json === 'string' ? JSON.parse(json) : json;
-  const ok = o?.type === 'audio-studio-noise-print' && Number(o.fftSize) >= 256 && Number(o.rate) > 0 && Array.isArray(o.channels) && o.channels.length > 0;
+  const ok = o?.type === 'audioslim-noise-print' && Number(o.fftSize) >= 256 && Number(o.rate) > 0 && Array.isArray(o.channels) && o.channels.length > 0;
   const bins = ok ? Number(o.fftSize) / 2 + 1 : 0;
   if (!ok || o.channels.some((c) => !Array.isArray(c) || c.length !== bins || c.some((v) => !Number.isFinite(v) || v < 0))) {
-    throw new Error('This file is not a noise print saved by Audio Studio.');
+    throw new Error('This file is not a noise print saved by audioslim+.');
   }
   return { id: nextPrintId++, rate: Number(o.rate), fftSize: Number(o.fftSize), frames: Number(o.frames) || 0, seconds: Number(o.seconds) || 0, channels: o.channels.map((c) => Float32Array.from(c)) };
 }

@@ -593,7 +593,7 @@ export function installFavorites(app) {
           id: 'favoriteRecording',
           title: 'Recording a Favorite',
           message: [
-            'Audio Studio is recording a favorite. Effects, fades, normalizing, inverting, reversing, silencing, deleting, cropping and inserting silence in the Waveform editor are captured in order, with their settings and any selection you make between them.',
+            'audioslim+ is recording a favorite. Effects, fades, normalizing, inverting, reversing, silencing, deleting, cropping and inserting silence in the Waveform editor are captured in order, with their settings and any selection you make between them.',
             'When you are done, choose Favorites > Stop Recording Favorite and name it. It then runs from the Favorites menu, the Favorites panel or a batch process.',
           ],
         });

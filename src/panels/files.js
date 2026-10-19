@@ -1,6 +1,6 @@
 // Files panel: every open audio file and session with its format details.
 // Double-click or Enter opens one in the editor; Delete closes it; rows can be
-// dragged into a multitrack session (dataTransfer type application/x-audio-studio-file).
+// dragged into a multitrack session (dataTransfer type application/x-audioslim-file).
 // The app event 'reveal-files' (file ids) highlights the files behind clips.
 // The disclosure arrow lists a file's markers (click one to go there); the
 // footer plays the selected file from its start, loops, and can auto-play
@@ -142,7 +142,7 @@ export function filesPanel(app) {
             e.stopPropagation();
           },
           ondragstart: (e) => {
-            e.dataTransfer.setData('application/x-audio-studio-file', doc.id);
+            e.dataTransfer.setData('application/x-audioslim-file', doc.id);
             e.dataTransfer.effectAllowed = 'copy';
           },
         },

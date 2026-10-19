@@ -15,7 +15,6 @@ describe('Export File dialog', () => {
   let app;
   beforeEach(() => {
     document.body.replaceChildren();
-    delete window.puter;
     app = { prefs: new Prefs(null) };
   });
 
@@ -26,8 +25,8 @@ describe('Export File dialog', () => {
     await tick(10);
     const name = $('.io-name');
     expect(name.value).toBe('Podcast.wav');
-    // Without Puter only "This device" can be chosen.
-    expect($('select[aria-label=Location]').value).toBe('download');
+    // The default location is the device; the picker asks where to write.
+    expect($('select[aria-label=Location]').value).toBe('device');
     expect($('.io-export').textContent).toContain('48000 Hz Stereo, 24-bit');
     // WebCodecs formats are listed but disabled in this environment.
     expect($('select[aria-label=Format] option[value=opus]').disabled).toBe(true);
@@ -53,7 +52,7 @@ describe('Export File dialog', () => {
     $('.dialog-foot .btn.primary').click();
     const r = await pending;
     expect(r.fileName).toBe('Final cut.flac');
-    expect(r.location).toEqual({ type: 'download' });
+    expect(r.location).toEqual({ type: 'device' });
     expect(r.options).toMatchObject({ format: 'flac', sampleRate: 44100, channels: 1, bitDepth: 16, dither: 'shaped', settings: { level: 5 } });
     // Choices are remembered for the next export.
     expect(app.prefs.get('exportPrefs')).toMatchObject({ format: 'flac', dither: 'shaped', settings: { flac: { level: 5 } } });

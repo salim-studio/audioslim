@@ -8,12 +8,11 @@ import { Channel } from '../audio/channel.js';
 import * as E from '../model/edits.js';
 import { createMarker, nextMarkerName, sortMarkers, MARKER_TYPES } from '../model/markers.js';
 import { openDialog, confirmDialog } from '../ui/dialog.js';
-import { openFiles, pickLocalFiles, openFromPuter, saveDocument, encodeDocument, downloadBlob } from '../storage/files.js';
+import { openFiles, pickLocalFiles, openFromDevice, saveDocument, encodeDocument, downloadBlob } from '../storage/files.js';
 import { TIME_FORMATS, parseTime } from '../lib/time.js';
 import { appIcon } from '../ui/icons.js';
 import { dsp } from '../audio/dsp.js';
 import { baseName } from '../audio/decode.js';
-import * as puter from '../storage/puter.js';
 import { shortcutsDialog } from '../ui/shortcuts-dialog.js';
 import { preferencesDialog } from '../ui/preferences.js';
 import { deleteSmoothFrames, zoomInFactor } from '../editor/view-prefs.js';
@@ -125,13 +124,14 @@ async function convertSampleType(app) {
 
 function aboutDialog() {
   return openDialog({
-    title: 'About Audio Studio',
+    title: 'About audioslim+',
     body: h(
       'div.about',
       h('div.about-logo', appIcon(64)),
-      h('p', 'Audio Studio is a waveform and multitrack audio editor that runs in your browser. Audio is processed on your device; files you save go to your own Puter cloud storage.'),
+      h('p', 'audioslim+ is a waveform and multitrack audio editor that runs in your browser. Everything is processed on your device: files are read from and written to this computer, never to a server.'),
       h('p.muted', 'Signal processing runs in WebAssembly compiled from Rust, playback in an AudioWorklet, and waveforms and spectrograms are drawn with WebGL2.'),
       h('p.muted', 'Icons from Lucide (ISC license) plus original glyphs.'),
+      h('p.muted', 'Copyright © 2026 salim-slimani. Released under the MIT license.'),
     ),
     buttons: [{ label: 'Close', value: true, primary: true }],
   });
@@ -161,7 +161,7 @@ export function installCoreCommands(app) {
         app.addDocument(doc);
       },
     },
-    { id: 'file.open', label: 'Open...', shortcut: 'Mod+O', run: () => openFromPuter(app) },
+    { id: 'file.open', label: 'Open...', shortcut: 'Mod+O', run: () => openFromDevice(app) },
     { id: 'file.openLocal', label: 'Open from This Device...', shortcut: 'Mod+Shift+O', run: async () => openFiles(app, await pickLocalFiles()) },
     {
       id: 'file.appendCurrent',
@@ -199,10 +199,7 @@ export function installCoreCommands(app) {
       id: 'file.import',
       label: 'File...',
       shortcut: 'Mod+I',
-      run: async () => {
-        if (puter.sdk() && puter.isSignedIn()) return openFiles(app, await puter.pickFiles({ multiple: true }), { activate: false });
-        return openFiles(app, await pickLocalFiles(), { activate: false });
-      },
+      run: async () => openFiles(app, await pickLocalFiles(), { activate: false }),
     },
     { id: 'file.importLocal', label: 'File from This Device...', run: async () => openFiles(app, await pickLocalFiles(), { activate: false }) },
     { id: 'file.close', label: 'Close', shortcut: 'Mod+W', enabled: anyDoc, run: () => app.closeDocument(app.active) },
@@ -817,7 +814,7 @@ export function installCoreCommands(app) {
 
     // ----------------------------------------------------------------- Help
     { id: 'help.shortcuts', label: 'Keyboard Shortcuts', shortcut: 'Mod+/', run: () => shortcutsDialog(app) },
-    { id: 'help.about', label: 'About Audio Studio', run: () => aboutDialog() },
+    { id: 'help.about', label: 'About audioslim+', run: () => aboutDialog() },
   ]);
 
   // Dynamic menus.
@@ -831,27 +828,6 @@ export function installCoreCommands(app) {
       run: () => app.prefs.set('timeFormat', f.id),
     }));
   app.documentMenuItems = () => app.documents.map((d) => ({ type: 'cmd', label: `${d.name}${d.dirty ? ' *' : ''}`, enabled: true, checked: d === app.active, run: () => app.activate(d) }));
-  app.recentMenuItems = () => {
-    const list = app.prefs.get('recent') || [];
-    if (!list.length) return [];
-    return [
-      ...list.map((r) => ({
-        type: 'cmd',
-        label: r.name,
-        enabled: true,
-        run: async () => {
-          try {
-            const blob = await puter.readFile(r.path);
-            await openFiles(app, [Object.assign(blob, { name: r.name })]).then((docs) => docs[0] && (docs[0].source = { type: 'puter', path: r.path }));
-          } catch {
-            app.notify(`"${r.name}" could not be opened. It may have been moved or deleted.`, { error: true });
-          }
-        },
-      })),
-      { type: 'sep' },
-      { type: 'cmd', label: 'Clear Recent', enabled: true, run: () => app.prefs.set('recent', []) },
-    ];
-  };
   app.channelMenuItems = () => {
     const doc = audio(app);
     if (!doc) return [];

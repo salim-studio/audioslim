@@ -47,10 +47,10 @@ export function applyEnginePrefs(app) {
 
 const ENGINE_KEYS = new Set(['latencyHint', 'outputMap', 'inputMap', 'outputDevice']);
 
-/** Settings file name for today: "Audio Studio Settings 2026-10-12.json". */
+/** Settings file name for today: "audioslim+ Settings 2026-10-12.json". */
 export function settingsFileName(now = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');
-  return `Audio Studio Settings ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
+  return `audioslim+ Settings ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
 }
 
 /** Applies validated settings: preferences, then the shortcuts and workspace that depend on them. */

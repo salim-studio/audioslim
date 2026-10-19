@@ -1,12 +1,12 @@
-# Audio Studio
+# audioslim+
 
-A waveform and multitrack audio editor for the browser, built on [Puter](https://puter.com). Record, edit, restore, mix and master audio with a docked panel workspace, studio effects and spectral editing. Audio is processed on your device; projects and exported files are stored in your own Puter cloud.
+A waveform and multitrack audio editor for the browser. Record, edit, restore, mix and master audio with a docked panel workspace, studio effects and spectral editing.
 
-An open-source alternative to Adobe Audition. No framework: vanilla JavaScript modules built with Vite. Puter.js is the only backend.
+Everything runs on your own device. Files are read from and written to your computer — there is no account, no server and no upload.
 
 **Live demo:** <https://salim-studio.github.io/audioslim/>
 
-> Forked from `src/audio-studio` in [HeyPuter/everything](https://github.com/HeyPuter/everything).
+An open-source alternative to Adobe Audition. No framework: vanilla JavaScript modules built with Vite, with the signal processing written in Rust and compiled to WebAssembly.
 
 ## What it does
 
@@ -14,7 +14,18 @@ An open-source alternative to Adobe Audition. No framework: vanilla JavaScript m
 - **Multitrack editor**: clips with fades, crossfades, envelopes, groups, stretching, remixing to a new length and speech alignment; buses, eight sends per track, track EQ and effect chains; automation; punch-in and loop recording into takes; mixdowns and bounces; session templates.
 - **Effects**: amplitude, delay, filter and EQ, modulation, restoration (noise prints, sound models, click/pop elimination, hum, reverb and hiss removal), reverb, special and time/pitch processors, all in WebAssembly, usable live in the Effects Rack and track chains or applied to a selection, with presets and Favorites.
 - **Analysis**: frequency analysis, amplitude statistics, phase meter, loudness measurement and matching, diagnostics.
-- **Workspace**: docked panels (Files, Media Browser for Puter and folders on this device, Markers, Playlist, Mixer, Tracks, Track Panner, Time, Zoom, Transport, Tools, Events, Video...) arranged in saved workspaces; categorized Preferences; MIDI control surfaces; batch processing; JavaScript automation scripts.
+- **Workspace**: docked panels (Files, Media Browser, Markers, Playlist, Mixer, Tracks, Track Panner, Time, Zoom, Transport, Tools, Events, Video...) arranged in saved workspaces; categorized Preferences; MIDI control surfaces; batch processing; JavaScript automation scripts.
+
+## Working with files
+
+| | |
+| --- | --- |
+| **Open** | Drag audio onto the window, use **File > Open**, or browse folders on this device from the Media Browser. |
+| **Save** | **File > Save** writes back to the file you opened. **File > Export** lets you pick a format, sample type and destination. |
+| **Devices** | Where the browser supports the File System Access API, saving opens a native picker and the file is written in place. Elsewhere the file is downloaded. |
+| **Media Browser** | Add a folder from this device to browse it, preview files, and drag them into the editor or a session. |
+| **Sessions** | A multitrack session is saved as one archive (`.zip`) holding the session file and its media. Opening it again restores the whole session. |
+| **Recovery** | Unsaved work is autosaved in the browser's private storage, and offered back for restore the next time you start. |
 
 ## Architecture
 
@@ -30,7 +41,9 @@ An open-source alternative to Adobe Audition. No framework: vanilla JavaScript m
 | Features | `src/features.js` | Feature modules register commands, panels and document kinds. |
 | Commands | `src/commands/`, `src/multitrack/commands.js` | Menu commands by area (core, edit, file, view, help, scripts). |
 | Multitrack | `src/multitrack/`, `src/model/session*.js` | Session model and edits, graph building (routing, sends, EQ), recording, stretching, alignment, templates. |
+| Storage | `src/storage/` | Device files and folders (File System Access API), autosave and session backups in the origin private file system, preferences in `localStorage`. |
 | Hardware | `src/control-surface/` | Web MIDI control surfaces: a DAW-controller protocol and learned mappings. |
+| Branding | `tools/make-brand-assets.py` | Draws the audioslim+ mark and writes every icon in `public/` and the repository root. |
 
 ## Development
 
@@ -44,6 +57,12 @@ npm run build:wasm # rebuilds src/audio/dsp.wasm (needs Rust 1.85.1 with wasm32-
 
 In development, `window.as` is the app and `as.openDev(['name.wav'])` opens test files from the gitignored `.dev-media/` folder.
 
+The brand assets are generated, not hand-drawn. After changing `tools/make-brand-assets.py`, run:
+
+```sh
+python tools/make-brand-assets.py
+```
+
 ## Deployment
 
 `main` is published to GitHub Pages by `.github/workflows/deploy-pages.yml`: the workflow installs with `npm ci`, builds to `dist/`, and uploads it as the Pages artifact. The Vite `base` is relative (`./`), so the build works unchanged under the repository sub-path.
@@ -53,8 +72,10 @@ The site is served at <https://salim-studio.github.io/audioslim/>. To publish a 
 ## Third-party
 
 - [Lucide](https://lucide.dev) icons (ISC), plus original glyphs in `src/ui/icons.js`.
-- [Puter.js](https://docs.puter.com) for sign-in, cloud files and AI features.
+- [lamejs](https://github.com/breezystack/lamejs) (LGPL-3.0) for MP3 encoding, loaded as a separate chunk.
 
 ## License
+
+Copyright © 2026 salim-slimani.
 
 This repository, including all its contents, sub-projects, modules, and components, is licensed under [MIT](./LICENSE) unless explicitly stated otherwise. Third-party libraries included in this repository may be subject to their own licenses.

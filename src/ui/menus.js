@@ -261,7 +261,7 @@ export const MENUS = [
       'fx.silence',
       'fx.dcOffset',
       '-',
-      { label: 'Generate', submenu: ['gen.noise', 'gen.speech', 'gen.tones', 'gen.silence'] },
+      { label: 'Generate', submenu: ['gen.noise', 'gen.tones', 'gen.silence'] },
       'fx.matchLoudness',
       '-',
       { expand: effectMenuSpec },

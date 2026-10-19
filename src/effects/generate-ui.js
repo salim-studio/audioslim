@@ -1,12 +1,12 @@
-// Effects > Generate: Tones, Noise, Silence and Speech. Generated audio is
-// inserted at the playhead or replaces the selection in the active file; with
-// no audio file open, a new file is created. Tones and Noise dialogs reuse the
-// effect parameter controls and preset storage (ids gen.tones / gen.noise).
-// Each dialog can play what it would generate before it is inserted.
+// Effects > Generate: Tones, Noise and Silence. Generated audio is inserted
+// at the playhead or replaces the selection in the active file; with no audio
+// file open, a new file is created. Tones and Noise dialogs reuse the effect
+// parameter controls and preset storage (ids gen.tones / gen.noise). Each
+// dialog can play what it would generate before it is inserted.
 
 import { h, announce } from '../lib/dom.js';
 import { icon } from '../ui/icons.js';
-import { openDialog, confirmDialog } from '../ui/dialog.js';
+import { openDialog } from '../ui/dialog.js';
 import { Channel } from '../audio/channel.js';
 import { AudioFile } from '../model/audio-file.js';
 import * as E from '../model/edits.js';
@@ -16,13 +16,8 @@ import { allPresets, savePreset, matchPreset, lastValues, rememberValues } from 
 import { generateTones, generateNoise, dbToGain, WAVEFORMS, NOISE_COLORS, NOISE_STYLES } from './generate.js';
 import { tonesBody, noiseBody } from './generate-views.js';
 import { controlsFor } from './layout.js';
-import { runTimePitch } from './defs/time-pitch.js';
 import { withProgress } from './progress.js';
 import { isAbort } from './apply.js';
-import * as puter from '../storage/puter.js';
-import { decodeAudio } from '../audio/decode.js';
-import { dsp } from '../audio/dsp.js';
-import { UserError } from '../lib/errors.js';
 import { encodeWav } from '../audio/wav.js';
 
 const audio = (app) => (app.active?.kind === 'audio' ? app.active : null);
@@ -376,231 +371,10 @@ export async function generateSilenceCommand(app) {
   return placeGenerated(app, [new Float32Array(Math.round(v.duration * rate))], rate, { label: 'Generate Silence', name: 'Silence', placement: 'insert' });
 }
 
-// ------------------------------------------------------------- speech
-
-export const SPEECH_LANGUAGES = [
-  { code: 'en-US', label: 'English (US)', voices: ['Joanna', 'Matthew', 'Ivy', 'Justin', 'Kendra', 'Kimberly', 'Salli', 'Joey'] },
-  { code: 'en-GB', label: 'English (UK)', voices: ['Amy', 'Brian', 'Emma'] },
-  { code: 'en-AU', label: 'English (Australia)', voices: ['Nicole', 'Russell'] },
-  { code: 'es-ES', label: 'Spanish (Spain)', voices: ['Lucia', 'Enrique', 'Conchita'] },
-  { code: 'es-US', label: 'Spanish (US)', voices: ['Lupe', 'Miguel', 'Penelope'] },
-  { code: 'fr-FR', label: 'French', voices: ['Lea', 'Mathieu', 'Celine'] },
-  { code: 'de-DE', label: 'German', voices: ['Vicki', 'Hans', 'Marlene'] },
-  { code: 'it-IT', label: 'Italian', voices: ['Bianca', 'Giorgio', 'Carla'] },
-  { code: 'pt-BR', label: 'Portuguese (Brazil)', voices: ['Camila', 'Vitoria', 'Ricardo'] },
-  { code: 'nl-NL', label: 'Dutch', voices: ['Lotte', 'Ruben'] },
-  { code: 'ja-JP', label: 'Japanese', voices: ['Mizuki', 'Takumi'] },
-  { code: 'ko-KR', label: 'Korean', voices: ['Seoyeon'] },
-  { code: 'cmn-CN', label: 'Chinese (Mandarin)', voices: ['Zhiyu'] },
-  { code: 'hi-IN', label: 'Hindi', voices: ['Aditi'] },
-];
-
-export const NATURAL_VOICES = ['alloy', 'ash', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer'];
-
-const MAX_SPEECH_CHARS = 3000;
-
-/** txt2speech options for a voice choice "polly:Joanna" or "openai:nova". */
-export function speechOptions(voiceChoice, language, neural) {
-  const [provider, voice] = String(voiceChoice).split(':');
-  if (provider === 'openai') return { provider: 'openai', model: 'gpt-4o-mini-tts', voice, response_format: 'wav' };
-  return { provider: 'aws-polly', voice, language, engine: neural ? 'neural' : 'standard' };
-}
-
-/** Readable message from a Puter error (objects, strings or Errors). */
-export function puterErrorMessage(err) {
-  if (!err) return 'Unknown error.';
-  if (typeof err === 'string') return err;
-  return err.message || err.error?.message || err.error || (err.code ? `Error ${err.code}` : 'Unknown error.');
-}
-
-/** Delivery settings applied to the synthesized speech: tempo (time stretch, pitch kept) and level. */
-export const SPEECH_DEF = {
-  id: 'gen.speech',
-  name: 'Generate Speech',
-  params: [
-    { id: 'speed', label: 'Speaking Rate', min: 50, max: 200, step: 1, default: 100, unit: '%' },
-    { id: 'volume', label: 'Volume', min: 0, max: 100, step: 1, default: 100, unit: '%' },
-  ],
-  presets: [],
-};
-
-/**
- * Applies speaking rate and volume to decoded speech. A rate above 100 %
- * speaks faster (shorter), below 100 % slower; the pitch is kept.
- */
-export async function shapeSpeech(d, channels, rate, { speed = 100, volume = 100 } = {}, { signal } = {}) {
-  let out = channels;
-  if (Math.abs(speed - 100) > 0.5) out = await runTimePitch(d, channels, rate, { mode: 1, stretch: 100 / speed, pitch: 1, flags: 1 }, { signal });
-  const g = Math.max(0, volume) / 100;
-  if (g !== 1) out = out.map((c) => c.map((v) => v * g));
-  return out;
-}
-
-async function speechDialog(app, sdk, targetRate) {
-  const saved = app.prefs.get('speechSettings') || {};
-  const delivery = generatorContext(SPEECH_DEF, { speed: saved.speed, volume: saved.volume });
-  const text = h('textarea.input.speech-text', { rows: 5, 'aria-label': 'Text to speak', placeholder: 'Type the words to speak', maxLength: MAX_SPEECH_CHARS }, saved.text || '');
-  const count = h('span.faint.tabular', { 'aria-live': 'off' });
-  const updateCount = () => (count.textContent = `${text.value.length} / ${MAX_SPEECH_CHARS}`);
-  text.addEventListener('input', updateCount);
-  updateCount();
-  const lang = h('select.select', { 'aria-label': 'Language' }, SPEECH_LANGUAGES.map((l) => h('option', { value: l.code, selected: l.code === (saved.language || 'en-US') }, l.label)));
-  const voice = h('select.select', { 'aria-label': 'Voice' });
-  const neural = h('input', { type: 'checkbox', checked: Boolean(saved.neural) });
-  const neuralRow = h('label.check', neural, 'Neural quality (not every voice supports it)');
-  const fillVoices = (keep) => {
-    const l = SPEECH_LANGUAGES.find((x) => x.code === lang.value) || SPEECH_LANGUAGES[0];
-    voice.replaceChildren(
-      h('optgroup', { label: `${l.label} voices` }, l.voices.map((v) => h('option', { value: `polly:${v}` }, v))),
-      h('optgroup', { label: 'Natural voices (any language)' }, NATURAL_VOICES.map((v) => h('option', { value: `openai:${v}` }, v[0].toUpperCase() + v.slice(1)))),
-    );
-    if (keep && [...voice.options].some((o) => o.value === keep)) voice.value = keep;
-    neuralRow.hidden = voice.value.startsWith('openai:');
-  };
-  lang.addEventListener('change', () => fillVoices());
-  voice.addEventListener('change', () => (neuralRow.hidden = voice.value.startsWith('openai:')));
-  fillVoices(saved.voice);
-  const doc = audio(app);
-  const placement = doc?.hasSelection ? h('select.select', { 'aria-label': 'Placement' }, h('option', { value: 'replace' }, 'Replace Selection'), h('option', { value: 'insert' }, 'Insert at Playhead')) : null;
-  const error = h('div.fx-name-error', { role: 'alert' });
-  const current = () => ({ text: text.value, language: lang.value, voice: voice.value, neural: neural.checked, speed: delivery.values.speed, volume: delivery.values.volume });
-  // Preview speaks the text now; OK then inserts the same take without asking the service again.
-  const player = previewPlayer(app, async () => {
-    const t = text.value.trim();
-    if (!t) throw new UserError('Type some text to speak.');
-    if (t.length > MAX_SPEECH_CHARS) throw new UserError(`Text must be under ${MAX_SPEECH_CHARS} characters.`);
-    player.el.querySelector('.gen-preview-status').textContent = 'Generating...';
-    const r = await synthesizeSpeech(sdk, current(), targetRate);
-    player.el.querySelector('.gen-preview-status').textContent = '';
-    return r;
-  }, { label: 'Preview speech' });
-  // Delivery changes reshape the cached take; other changes need a new one.
-  delivery.subscribe(() => player.refresh());
-  const r = await openDialog({
-    title: 'Generate Speech',
-    className: 'fx-dialog',
-    body: h(
-      'div.fx-dialog-body.speech-body',
-      text,
-      h('div.row', count, h('div.spacer'), h('span.faint', 'Uses Puter AI; requires a Puter account.')),
-      h('div.form-grid', h('label', 'Language:'), lang, h('label', 'Voice:'), voice, h('span'), neuralRow, placement ? h('label', 'Placement:') : null, placement),
-      controlsFor(delivery, ['speed', 'volume']),
-      error,
-    ),
-    footerStart: player.el,
-    buttons: [
-      { label: 'Cancel', value: null },
-      { label: 'Generate', value: 'ok', primary: true },
-    ],
-    initialFocus: 'textarea',
-    onSubmit: () => {
-      const t = text.value.trim();
-      if (!t) {
-        error.textContent = 'Type some text to speak.';
-        return false;
-      }
-      if (t.length > MAX_SPEECH_CHARS) {
-        error.textContent = `Text must be under ${MAX_SPEECH_CHARS} characters.`;
-        return false;
-      }
-      return true;
-    },
-  });
-  player.dispose();
-  if (r !== 'ok') return null;
-  const settings = current();
-  app.prefs.set('speechSettings', settings);
-  return { ...settings, placement: placement?.value || 'insert' };
-}
-
-let speechTake = null; // the last synthesized speech: { key, outs, rate }
-
-/**
- * Speech for the settings at `targetRate`: synthesized by Puter AI, decoded,
- * resampled and shaped (speaking rate, volume). The last take is kept, so a
- * preview followed by Generate asks the service once.
- */
-export async function synthesizeSpeech(sdk, s, targetRate, signal) {
-  const voiceKey = JSON.stringify([s.text.trim(), s.voice, s.language, s.neural, targetRate]);
-  const key = JSON.stringify([voiceKey, s.speed, s.volume]);
-  if (speechTake?.key === key) return speechTake;
-  let raw = speechTake?.voiceKey === voiceKey ? speechTake.raw : null;
-  const d = await dsp();
-  if (!raw) {
-    let el;
-    try {
-      el = await sdk.ai.txt2speech(s.text.trim(), speechOptions(s.voice, s.language, s.neural));
-    } catch (err) {
-      throw new UserError(`Speech could not be generated: ${puterErrorMessage(err)}`);
-    }
-    const decoded = await decodeSpeech(el, signal);
-    raw = decoded.channels;
-    if (decoded.sampleRate !== targetRate) raw = raw.map((c) => d.resample(c, decoded.sampleRate, targetRate));
-  }
-  const outs = await shapeSpeech(d, raw, targetRate, s, { signal });
-  speechTake = { key, voiceKey, raw, outs, rate: targetRate };
-  return speechTake;
-}
-
-/** Forgets the kept speech take (tests). */
-export function clearSpeechTake() {
-  speechTake = null;
-}
-
-/** Fetches the audio behind an <audio> element returned by txt2speech and decodes it. */
-async function decodeSpeech(el, signal) {
-  const src = el?.src || el?.currentSrc || (typeof el === 'string' ? el : null);
-  if (!src) throw new UserError('The speech service returned no audio.');
-  let buffer;
-  try {
-    const res = await fetch(src, { signal });
-    if (!res.ok) throw new Error(String(res.status));
-    buffer = await res.arrayBuffer();
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    throw new UserError('The generated speech could not be downloaded. Check your connection and try again.');
-  }
-  return decodeAudio(buffer, 'speech.mp3');
-}
-
-export async function generateSpeechCommand(app) {
-  const sdk = puter.sdk();
-  if (!sdk?.ai?.txt2speech) {
-    app.notify('Speech generation needs Puter, which is not available. Check your connection and reload.', { error: true });
-    return null;
-  }
-  if (!puter.isSignedIn()) {
-    const ok = await confirmDialog({ title: 'Sign In to Generate Speech', message: 'Generating speech uses Puter AI and needs a free Puter account. Sign in now?', confirm: 'Sign In' });
-    if (!ok) return null;
-    try {
-      if (!(await puter.signIn())) return null;
-    } catch (err) {
-      app.notify(`Sign-in did not complete: ${puterErrorMessage(err)}`, { error: true });
-      return null;
-    }
-  }
-  const targetRate = rateFor(app);
-  const s = await speechDialog(app, sdk, targetRate);
-  if (!s) return null;
-  try {
-    const { outs, rate } = await withProgress(
-      app,
-      'Generating Speech',
-      (signal) => synthesizeSpeech(sdk, s, targetRate, signal),
-      { indeterminate: true, delay: 0 },
-    );
-    return placeGenerated(app, outs, rate, { label: 'Generate Speech', name: 'Speech', placement: s.placement });
-  } catch (err) {
-    if (isAbort(err)) return null;
-    throw err;
-  }
-}
-
 export function installGenerators(app) {
   app.commands.register([
     { id: 'gen.tones', label: 'Tones...', run: () => generateTonesCommand(app) },
     { id: 'gen.noise', label: 'Noise...', run: () => generateNoiseCommand(app) },
     { id: 'gen.silence', label: 'Silence...', run: () => generateSilenceCommand(app) },
-    { id: 'gen.speech', label: 'Speech...', run: () => generateSpeechCommand(app) },
   ]);
 }

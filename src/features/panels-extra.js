@@ -58,7 +58,7 @@ export function installPanelsExtra(app) {
 export function installEventLog(app) {
   const log = new EventLog();
   app.eventLog = log;
-  const source = () => app.active?.name || 'Audio Studio';
+  const source = () => app.active?.name || 'audioslim+';
 
   // Wrap rather than replace: toasts and the status bar work as before.
   const notify = app.notify.bind(app);
@@ -80,12 +80,12 @@ export function installEventLog(app) {
 
   if (typeof window !== 'undefined') {
     window.addEventListener('error', (e) => {
-      if (e?.message) log.add({ type: 'error', name: 'Audio Studio', message: e.message });
+      if (e?.message) log.add({ type: 'error', name: 'audioslim+', message: e.message });
     });
     window.addEventListener('unhandledrejection', (e) => {
       const r = e?.reason;
       if (r?.name === 'AbortError') return; // a cancelled operation, not a failure
-      log.add({ type: 'error', name: 'Audio Studio', message: r?.message || String(r ?? 'Unknown error') });
+      log.add({ type: 'error', name: 'audioslim+', message: r?.message || String(r ?? 'Unknown error') });
     });
   }
   return log;

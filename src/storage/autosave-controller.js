@@ -68,7 +68,7 @@ export function installAutosave(app, { store = opfsAvailable() ? new AutosaveSto
           if (!warned) {
             warned = true;
             console.warn('[autosave]', err);
-            app.notify('Autosave could not write to this browser\'s storage. Save your work to Puter or download it.', { error: true });
+            app.notify('Autosave could not write to this browser\'s storage. Save your work to a file on this device.', { error: true });
           }
         }
       }
@@ -148,7 +148,7 @@ export function installAutosave(app, { store = opfsAvailable() ? new AutosaveSto
             markers: sortMarkers((m.markers || []).map((x) => createMarker(x))),
             meta: m.meta || {},
             info: { bitDepth: m.bitDepth, format: m.format, exportOptions: m.exportOptions || undefined },
-            source: m.source?.type === 'puter' ? m.source : { type: 'recovered' },
+            source: m.source?.type === 'local' ? m.source : { type: 'recovered' },
           });
           doc.savedState = null; // unsaved until the user saves it
           app.addDocument(doc, { activate: !docs.length });
@@ -194,7 +194,7 @@ export async function recoveryDialog(app, controller, manifests) {
   );
   const r = await openDialog({
     title: 'Recover Unsaved Audio',
-    body: h('div.io-recover', h('p', 'Audio Studio closed with unsaved changes. These files were autosaved in this browser:'), list),
+    body: h('div.io-recover', h('p', 'audioslim+ closed with unsaved changes. These files were autosaved in this browser:'), list),
     buttons: [
       { label: 'Discard', value: 'discard', danger: true },
       { label: 'Not Now', value: null },

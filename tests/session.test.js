@@ -361,7 +361,7 @@ describe('session files', () => {
 
   it('rejects files that are not sessions and sanitizes names', () => {
     expect(() => parseSession('nope')).toThrow(/damaged/);
-    expect(() => parseSession('{"format":"x"}')).toThrow(/not an Audio Studio session/);
+    expect(() => parseSession('{"format":"x"}')).toThrow(/not an audioslim\+ session/);
     expect(safeFileName('a/b:c.wav')).toBe('a_b_c');
     expect(mediaFolderName('Song.asesx')).toBe('Song_Media');
   });

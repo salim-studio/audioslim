@@ -139,7 +139,7 @@ export function metadataPanel(app) {
       bextDate: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
       bextTime: `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`,
     };
-    if (!meta.bextOriginator) meta.bextOriginator = 'Audio Studio';
+    if (!meta.bextOriginator) meta.bextOriginator = 'audioslim+';
     doc.apply('Edit Metadata', { ...doc.state, meta: cleanMeta(meta) });
   };
 

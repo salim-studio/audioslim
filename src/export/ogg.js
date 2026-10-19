@@ -63,7 +63,7 @@ export function muxOggOpus({ channels, preSkip = 312, inputRate = 48000, packets
   const pages = [];
   let sequence = 0;
   pages.push(oggPage({ serial, sequence: sequence++, granule: 0, flags: 0x02, segments: [19], body: opusHead({ channels, preSkip, inputRate }) }));
-  const tags = concatBytes([ascii('OpusTags'), vorbisComment(meta, 'Audio Studio')]);
+  const tags = concatBytes([ascii('OpusTags'), vorbisComment(meta, 'audioslim+')]);
   pushPacketPages(pages, tags, () => sequence++, serial, 0, false);
   // Audio: group packets into pages of about 4 KB (or 255 lacing values).
   // Granules count every decoded sample, pre-skip included (RFC 7845 4.1),

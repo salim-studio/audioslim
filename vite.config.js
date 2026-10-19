@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
-import puterLocalhost from './dev/puter-localhost.mjs';
+import appLocalhost from './dev/localhost.mjs';
 
 export default defineConfig({
-  plugins: [puterLocalhost('audio-studio')],
+  plugins: [appLocalhost('audioslim')],
   base: './',
   build: {
     target: 'es2022',

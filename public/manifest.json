@@ -1,6 +1,6 @@
 {
-  "name": "Audio Studio",
-  "short_name": "Audio Studio",
+  "name": "audioslim+",
+  "short_name": "audioslim+",
   "description": "Waveform and multitrack audio editor: record, edit, restore, mix and master audio in your browser.",
   "start_url": "./",
   "scope": "./",

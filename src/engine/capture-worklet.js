@@ -67,4 +67,4 @@ class CaptureProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('audio-studio-capture', CaptureProcessor);
+registerProcessor('audioslim-capture', CaptureProcessor);

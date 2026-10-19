@@ -3,7 +3,10 @@
 
 import { Emitter } from './emitter.js';
 
-const KEY = 'audio-studio:prefs';
+const KEY = 'audioslim:prefs';
+// Settings written by earlier versions of the app, under its old name. They
+// are read once and then saved under the current key.
+const LEGACY_KEYS = ['audio-studio:prefs'];
 
 export const DEFAULTS = {
   theme: 'system',
@@ -53,7 +56,7 @@ export const DEFAULTS = {
   zoomStep: 50, // percent of the view each Zoom In/Out (Time) step removes
   dismissedNotices: [], // notice ids turned off with "Don't show this again"
   // Appearance
-  accentColor: 'blue',
+  accentColor: 'audioslim',
   waveColors: null, // { wave, selection, background } or null for the theme colors
   waveColorPresets: [], // [{ name, wave, selection, background, playhead, cue, subclip, cart, cd }]
   uiBrightness: 0, // -100 (darker) .. 100 (lighter) for panels and backgrounds
@@ -140,7 +143,7 @@ export const DEFAULTS = {
 /** Keys left out of exported settings: they point at files on this device or account. */
 export const LOCAL_ONLY_KEYS = new Set(['recent', 'exportFolder', 'mediaFolder', 'inputDevice', 'outputDevice']);
 
-const SETTINGS_KIND = 'audio-studio-settings';
+const SETTINGS_KIND = 'audioslim-settings';
 
 /** A JSON-able snapshot of every stored preference (shortcuts, favorites and workspaces included). */
 export function exportSettings(prefs, now = new Date()) {
@@ -157,9 +160,9 @@ const typeOf = (v) => (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof
  * type (a null default accepts objects); unknown keys must look like ours.
  */
 export function validateSettings(data) {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('The file is not an Audio Studio settings file.');
-  if (data.kind !== SETTINGS_KIND || typeof data.prefs !== 'object' || !data.prefs || Array.isArray(data.prefs)) throw new Error('The file is not an Audio Studio settings file.');
-  if (Number(data.version) > 1) throw new Error('These settings were exported by a newer version of Audio Studio.');
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('The file is not an audioslim+ settings file.');
+  if (data.kind !== SETTINGS_KIND || typeof data.prefs !== 'object' || !data.prefs || Array.isArray(data.prefs)) throw new Error('The file is not an audioslim+ settings file.');
+  if (Number(data.version) > 1) throw new Error('These settings were exported by a newer version of audioslim+.');
   const values = {};
   const skipped = [];
   for (const [k, v] of Object.entries(data.prefs)) {
@@ -209,8 +212,18 @@ export class Prefs extends Emitter {
     super();
     this.storage = storage;
     this.values = {};
+    let raw = null;
     try {
-      this.values = migrate(JSON.parse(storage?.getItem(KEY) || '{}') || {});
+      raw = storage?.getItem(KEY);
+      if (!raw) for (const legacy of LEGACY_KEYS) {
+        raw = storage?.getItem(legacy);
+        if (raw) break;
+      }
+    } catch {
+      raw = null;
+    }
+    try {
+      this.values = migrate(JSON.parse(raw || '{}') || {});
     } catch {
       this.values = {};
     }

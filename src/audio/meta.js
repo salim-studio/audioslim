@@ -263,7 +263,7 @@ export function cartChunk(meta) {
   const tag = m.cartTagText ? enc.encode(`${m.cartTagText.replace(/\r?\n/g, '\r\n')}\r\n`) : new Uint8Array(0);
   const body = new Uint8Array(CART_FIXED + tag.length);
   body.set(ascii4('0101'), 0);
-  const values = { ...m, producerAppId: 'Audio Studio', producerAppVersion: '1.0' };
+  const values = { ...m, producerAppId: 'audioslim+', producerAppVersion: '1.0' };
   let at = 4;
   for (const [id, len] of CART_TEXT) {
     body.set(fixedText(values[id], len), at);
@@ -420,7 +420,7 @@ export function parseId3v2(bytes) {
 const VORBIS_KEYS = { title: 'TITLE', artist: 'ARTIST', album: 'ALBUM', year: 'DATE', genre: 'GENRE', comment: 'COMMENT', track: 'TRACKNUMBER', albumArtist: 'ALBUMARTIST', composer: 'COMPOSER', copyright: 'COPYRIGHT', bpm: 'BPM', key: 'KEY' };
 
 /** Vorbis comment structure (vendor string plus KEY=value list), little-endian lengths. */
-export function vorbisComment(meta, vendor = 'Audio Studio') {
+export function vorbisComment(meta, vendor = 'audioslim+') {
   const m = cleanMeta(meta);
   const v = enc.encode(vendor);
   const items = Object.entries(VORBIS_KEYS)

@@ -1,6 +1,7 @@
 // Export settings shared by Batch Process and Match Loudness: format, sample
-// type, file name prefix/suffix and location (a Puter folder, or downloads
-// zipped when there are several files), plus the writer that stores outputs.
+// type, file name prefix/suffix and location (a folder on this device, or
+// downloads zipped when there are several files), plus the writer that stores
+// outputs.
 
 import { h } from '../lib/dom.js';
 import { icon } from '../ui/icons.js';
@@ -9,18 +10,18 @@ import { FORMATS, getFormat, COMMON_RATES, usesDither } from '../export/formats.
 import { DITHER_MODES } from '../audio/quantize.js';
 import { zipStore } from '../lib/zip.js';
 import { downloadBlob } from '../storage/files.js';
-import * as puter from '../storage/puter.js';
+import { canPickFolder, chooseFolder, currentFolderName, folderHas, writeInFolder } from '../storage/device-save.js';
 import { uniqueName } from './queue.js';
 
 /** Where outputs go, as text for summaries. */
 export function locationText(s) {
-  if (s.location === 'puter') return `to ${s.dir || `~/${puter.APP_DIR}`}`;
+  if (s.location === 'device') return `to ${currentFolderName() || 'a folder on this device'}`;
   return 'downloaded (several files as one ZIP)';
 }
 
 /** Asks for export settings starting from `s`; resolves the new settings fields, or null. */
 export async function exportSettingsDialog(app, s, { title = 'Batch Export Settings', example: exampleName = 'Interview' } = {}) {
-  const sdk = Boolean(puter.sdk());
+  const canFolder = canPickFolder();
   const fmtSel = h('select.select', { 'aria-label': 'Format' }, FORMATS.map((f) => h('option', { value: f.id }, f.label)));
   fmtSel.value = s.format;
   const rateSel = h('select.select', { 'aria-label': 'Sample rate' });
@@ -32,11 +33,11 @@ export async function exportSettingsDialog(app, s, { title = 'Batch Export Setti
   const settingsHost = h('div.batch-format-settings');
   const prefix = h('input.input', { type: 'text', value: s.prefix, 'aria-label': 'File name prefix', spellcheck: 'false' });
   const suffix = h('input.input', { type: 'text', value: s.suffix, 'aria-label': 'File name suffix', spellcheck: 'false' });
-  const locSel = h('select.select', { 'aria-label': 'Location' }, h('option', { value: 'puter', disabled: !sdk }, sdk ? 'Puter folder' : 'Puter folder (not available)'), h('option', { value: 'download' }, 'Download (ZIP for several files)'));
-  locSel.value = sdk ? s.location : 'download';
-  let dir = s.dir;
+  const locSel = h('select.select', { 'aria-label': 'Location' }, h('option', { value: 'device', disabled: !canFolder }, canFolder ? 'A folder on this device' : 'A folder on this device (not supported by this browser)'), h('option', { value: 'download' }, 'Download (ZIP for several files)'));
+  locSel.value = canFolder ? s.location : 'download';
   const dirText = h('span.batch-dir');
   const browse = h('button.btn', { type: 'button' }, 'Browse...');
+  browse.hidden = !canFolder;
   const dirRow = h('div.batch-dir-row', icon('folder', 14), dirText, browse);
   const collSel = h('select.select', { 'aria-label': 'When a file exists' }, h('option', { value: 'rename' }, 'Add a number to the name'), h('option', { value: 'overwrite' }, 'Replace the existing file'));
   collSel.value = s.collision;
@@ -70,10 +71,10 @@ export async function exportSettingsDialog(app, s, { title = 'Batch Export Setti
         return h('label.batch-setting', h('span.muted', `${st.label}:`), sel);
       }),
     );
-    const puterLoc = locSel.value === 'puter';
-    dirRow.hidden = !puterLoc;
-    collRow.forEach((x) => (x.hidden = !puterLoc));
-    dirText.textContent = dir || `~/${puter.APP_DIR}`;
+    const toFolder = locSel.value === 'device';
+    dirRow.hidden = !toFolder;
+    collRow.forEach((x) => (x.hidden = !toFolder));
+    dirText.textContent = currentFolderName() || 'No folder chosen yet';
     example.textContent = `Example: ${prefix.value}${exampleName}${suffix.value}.${f.ext}`;
   };
   fmtSel.addEventListener('change', sync);
@@ -84,12 +85,8 @@ export async function exportSettingsDialog(app, s, { title = 'Batch Export Setti
   suffix.addEventListener('input', sync);
   browse.addEventListener('click', async () => {
     try {
-      if (!puter.isSignedIn() && !(await puter.signIn())) return;
-      const item = await puter.pickDirectory();
-      if (item?.path) {
-        dir = item.path;
-        sync();
-      }
+      await chooseFolder();
+      sync();
     } catch (err) {
       app.notify(err?.message || 'The folder could not be chosen.', { error: true });
     }
@@ -132,41 +129,36 @@ export async function exportSettingsDialog(app, s, { title = 'Batch Export Setti
     prefix: prefix.value,
     suffix: suffix.value,
     location: locSel.value,
-    dir,
     collision: collSel.value,
   };
 }
 
 /**
- * Output writer for export settings `s`. Resolves null when Puter output is
- * chosen but unavailable. write(name, blob) stores one file and resolves its
- * final name; finish(zipName) downloads what was collected (a ZIP for several).
+ * Output writer for export settings `s`. write(name, blob) stores one file and
+ * resolves its final name; finish(zipName) downloads what was collected (a ZIP
+ * for several).
  */
 export async function outputWriter(app, s) {
-  let dir = null;
-  if (s.location === 'puter') {
-    if (!puter.sdk()) {
-      app.notify('Puter is not available. Choose Download in Export Settings.', { error: true });
-      return null;
-    }
-    if (!puter.isSignedIn() && !(await puter.signIn().catch(() => false))) return null;
-    dir = s.dir || (await puter.appDir());
-  }
+  const toFolder = s.location === 'device';
   const zip = [];
   const taken = new Set();
   return {
-    dir,
     async write(name, blob) {
-      if (dir) {
+      if (toFolder) {
         let final = name;
         if (s.collision === 'rename') {
           const used = new Set();
-          while (await puter.exists(puter.joinPath(dir, final))) {
+          while (await folderHas(final)) {
             used.add(final.toLowerCase());
             final = uniqueName(name, used);
           }
         }
-        await puter.writeFile(puter.joinPath(dir, final), blob);
+        const written = await writeInFolder(final, blob);
+        // Without a folder chosen there is nowhere to write: collect and ZIP.
+        if (!written) {
+          zip.push({ name: final, blob });
+          return final;
+        }
         return final;
       }
       const final = uniqueName(name, taken);

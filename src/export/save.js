@@ -1,15 +1,13 @@
-// Saving and exporting documents: Save (back to the document's Puter file in
-// its own format), Save As, Save a Copy, Export File, Save Selection As and
-// Download. Encoding always runs in the export worker behind a cancellable
-// progress dialog.
+// Saving and exporting documents: Save (back to the file it came from), Save
+// As, Save a Copy, Export File, Save Selection As and Download. Encoding
+// always runs in the export worker behind a cancellable progress dialog.
 
 import { exportAudio } from './export.js';
 import { exportFileDialog } from './dialog.js';
 import { withProgress } from './progress.js';
 import { conformOptions, defaultOptions, docBitDepth, formatForName, getFormat } from './formats.js';
-import { confirmDialog } from '../ui/dialog.js';
-import * as puter from '../storage/puter.js';
-import { downloadBlob, rememberRecent } from '../storage/files.js';
+import { saveBlob, writeHandle } from '../storage/device-save.js';
+import { downloadBlob } from '../storage/files.js';
 
 /** Encodes frames [start, end) of a document with export options. */
 export function encodeDoc(doc, options, { start = 0, end = doc.length, onProgress, signal } = {}) {
@@ -28,18 +26,18 @@ function encodeWithProgress(doc, options, range, label) {
   return withProgress(label, (onProgress, signal) => encodeDoc(doc, options, { ...range, onProgress, signal }), { detail: label });
 }
 
-/** File > Save: in place when the document has a Puter file in a writable format, else Save As. */
+/** File > Save: in place when the document was written to a file on this
+ * device in a writable format, else Save As. */
 export async function saveDocument(app, doc, { saveAs = false, copy = false } = {}) {
   if (!doc) return false;
-  const path = doc.source?.type === 'puter' ? doc.source.path : null;
-  const format = path ? formatForName(path) : null;
-  if (!saveAs && !copy && path && format && getFormat(format)) {
-    if (!puter.isSignedIn() && !(await puter.signIn().catch(() => false))) return false;
+  const handle = doc.source?.type === 'device' ? doc.source.handle : null;
+  const format = handle ? formatForName(doc.source.name) : null;
+  if (!saveAs && !copy && handle && format && getFormat(format)) {
     const options = optionsForSave(doc, format);
     const state = doc.state;
     const blob = await encodeWithProgress(doc, options, {}, `Saving ${doc.name}`);
     if (!blob) return false;
-    await withProgress(`Saving ${doc.name}`, () => puter.writeFile(path, blob), { delay: 600, detail: 'Uploading to Puter' });
+    await withProgress(`Saving ${doc.name}`, () => writeHandle(handle, blob), { delay: 600, detail: 'Writing to this device' });
     // Only mark saved if nothing changed while encoding.
     if (doc.state === state) doc.markSaved();
     app.setStatus(`Saved ${doc.name}`);
@@ -58,25 +56,6 @@ export async function saveFlow(app, doc, { mode = 'export', range = null } = {})
   for (;;) {
     const r = await exportFileDialog(app, doc, { mode, frames: end - start, initialName });
     if (!r) return false;
-    let path = null;
-    let dir = null;
-    if (r.location.type === 'puter') {
-      if (!puter.isSignedIn() && !(await puter.signIn().catch(() => false))) {
-        app.notify('Sign in to Puter to save there, or choose This device.', { error: true });
-        initialName = r.fileName;
-        continue;
-      }
-      dir = r.location.dir || (await puter.appDir());
-      path = puter.joinPath(dir, r.fileName);
-      const isCurrent = mode === 'saveAs' && doc.source?.type === 'puter' && doc.source.path === path;
-      if (!isCurrent && (await puter.exists(path))) {
-        const ok = await confirmDialog({ title: 'Replace File?', message: `"${r.fileName}" already exists in ${dir}. Do you want to replace it?`, confirm: 'Replace', danger: true });
-        if (!ok) {
-          initialName = r.fileName;
-          continue;
-        }
-      }
-    }
     const state = doc.state;
     const label = `${mode === 'export' || mode === 'download' ? 'Exporting' : 'Saving'} ${r.fileName}`;
     const blob = await encodeWithProgress(doc, r.options, { start, end }, label);
@@ -84,20 +63,30 @@ export async function saveFlow(app, doc, { mode = 'export', range = null } = {})
       app.setStatus('Cancelled');
       return false;
     }
-    let item = null;
-    if (path) {
-      item = await withProgress(label, () => puter.writeFile(path, blob), { delay: 600, detail: 'Uploading to Puter' });
-      rememberRecent(app, { name: r.fileName, path });
+    let saved = null;
+    if (r.location.type === 'device') {
+      try {
+        saved = await saveBlob(blob, r.fileName, { format: r.options.format, description: getFormat(r.options.format)?.label });
+      } catch (err) {
+        // The user dismissed the save picker.
+        if (err?.name === 'AbortError') {
+          app.setStatus('Cancelled');
+          return false;
+        }
+        app.notify(err?.message || 'The file could not be saved.', { error: true });
+        continue;
+      }
+      if (!saved) downloadBlob(blob, r.fileName);
     } else downloadBlob(blob, r.fileName);
     if (mode === 'saveAs') {
-      doc.source = path ? { type: 'puter', path, uid: item?.uid } : { type: 'download' };
+      doc.source = saved ? { type: 'device', handle: saved.handle, name: saved.name } : { type: 'download' };
       doc.info = { ...doc.info, format: r.options.format, exportOptions: r.options, size: blob.size };
       if (doc.name !== r.fileName) doc.rename(r.fileName);
       if (doc.state === state) doc.markSaved();
       else doc.emit('change', { kind: 'saved' });
     }
-    app.setStatus(path ? `Saved ${r.fileName} to ${dir}` : `Downloaded ${r.fileName}`);
-    app.emit('exported', { doc, path, fileName: r.fileName, options: r.options, mode });
+    app.setStatus(saved ? `Saved ${saved.name}` : `Downloaded ${r.fileName}`);
+    app.emit('exported', { doc, fileName: r.fileName, options: r.options, mode });
     return true;
   }
 }

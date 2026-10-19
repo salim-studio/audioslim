@@ -4,10 +4,10 @@
 // browser asks for permission again after a reload (a click on the folder).
 //
 // Paths look like "local:<rootId>/<sub/folders>/<name>" so they never clash
-// with Puter paths. Items match the shape of Puter directory entries
+// with the 'local:' path scheme. Items match the shape of directory entries
 // ({ name, path, is_dir, size, modified }) plus `local: true`.
 
-const DB = 'audio-studio-local-folders';
+const DB = 'audioslim-local-folders';
 const STORE = 'roots';
 const PREFIX = 'local:';
 
@@ -74,7 +74,7 @@ export async function loadRoots() {
 export async function addRoot() {
   let handle;
   try {
-    handle = await window.showDirectoryPicker({ id: 'audio-studio-media', mode: 'read' });
+    handle = await window.showDirectoryPicker({ id: 'audioslim-media', mode: 'read' });
   } catch (err) {
     if (err?.name === 'AbortError') return null;
     throw err;

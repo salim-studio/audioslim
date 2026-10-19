@@ -7,8 +7,13 @@
 
 import { resolvedTheme, parseColor, cssVar } from './theme.js';
 
-/** Accent presets: [dark theme, light theme] colors. 'blue' is the default look. */
+/**
+ * Accent presets: [dark theme, light theme] colors, and the text color that
+ * reads on top of them. 'audioslim+' is the brand look; 'blue' is the
+ * theme's own default.
+ */
 export const ACCENTS = [
+  { id: 'audioslim', label: 'audioslim+', dark: '#86d93f', light: '#4f8f0d', text: { dark: '#16210a', light: '#ffffff' } },
   { id: 'blue', label: 'Blue', dark: '#2d8ceb', light: '#1473e6' },
   { id: 'violet', label: 'Violet', dark: '#8f6cf0', light: '#6d48d8' },
   { id: 'teal', label: 'Teal', dark: '#1fb5a5', light: '#0d8478' },
@@ -106,6 +111,9 @@ export function appearanceVars(prefs, theme = resolvedTheme(), base = () => '') 
       '--focus': theme === 'light' ? b : mixColors(b, '#ffffff', 0.25),
       '--cti': b,
     });
+    // A light accent needs dark text on top of it.
+    const text = typeof accent.text === 'string' ? accent.text : accent.text?.[theme];
+    if (text) vars['--accent-text'] = text;
   }
   const bright = brightnessOf(prefs);
   if (bright) {
@@ -150,7 +158,7 @@ export function markerColor(type) {
   return (type && type !== 'cue' && cssVar(`--marker-${type}`)) || cssVar('--marker');
 }
 
-const APPLIED = ['--accent', '--accent-strong', '--accent-soft', '--hot', '--focus', '--cti', '--bg-editor', '--wave', '--wave-dim', '--wave-sel', '--sel-bg', '--sel-edge', '--playhead', '--marker', '--marker-range', '--marker-subclip', '--marker-cart', '--marker-cd', ...BRIGHTNESS_TOKENS];
+const APPLIED = ['--accent', '--accent-strong', '--accent-soft', '--accent-text', '--hot', '--focus', '--cti', '--bg-editor', '--wave', '--wave-dim', '--wave-sel', '--sel-bg', '--sel-edge', '--playhead', '--marker', '--marker-range', '--marker-subclip', '--marker-cart', '--marker-cd', ...BRIGHTNESS_TOKENS];
 let lastKey = '';
 
 /** Writes the appearance properties onto <html>; repaints (via 'themechange') when they changed. */

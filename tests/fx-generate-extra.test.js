@@ -150,20 +150,3 @@ describe('generator dialog bodies', () => {
     expect(delayRow.hidden).toBe(false);
   });
 });
-
-describe('speech delivery', () => {
-  it('speeds up speech without changing its level, and scales the volume', async () => {
-    await import('./fx-wasm.js');
-    const { dsp } = await import('../src/audio/dsp.js');
-    const { shapeSpeech } = await import('../src/effects/generate-ui.js');
-    const d = await dsp();
-    const rate = 16000;
-    const x = Float32Array.from({ length: rate }, (_, i) => 0.5 * Math.sin((2 * Math.PI * 220 * i) / rate));
-    const [fast] = await shapeSpeech(d, [x], rate, { speed: 200, volume: 100 });
-    expect(fast.length).toBeGreaterThan(rate * 0.45);
-    expect(fast.length).toBeLessThan(rate * 0.55);
-    const [quiet] = await shapeSpeech(d, [x], rate, { speed: 100, volume: 50 });
-    expect(quiet.length).toBe(rate);
-    expect(peak(quiet)).toBeCloseTo(0.25, 3);
-  });
-});

@@ -6,7 +6,7 @@
 
 import { setLoadedImpulse, MAX_LOADED_IMPULSES } from '../effects/defs/reverb-impulses.js';
 
-const DB = 'audio-studio-impulses';
+const DB = 'audioslim-impulses';
 const STORE = 'impulses';
 export const MAX_KEPT = MAX_LOADED_IMPULSES;
 

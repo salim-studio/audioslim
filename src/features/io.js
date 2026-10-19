@@ -1,7 +1,7 @@
 // Files, export and recording: Save As / Export File dialog and encoders,
 // recording into the Waveform editor (app.recorder), input metering and
 // device choice, the Media Browser and Metadata panels, marker import,
-// Open Recent, autosave with crash recovery and the Puter window-close prompt.
+// Open Recent, autosave with crash recovery and the beforeunload prompt.
 
 import '../styles/files.css';
 import { CornerLeftUp } from 'lucide';
@@ -11,11 +11,11 @@ import { openDialog } from '../ui/dialog.js';
 import { AudioFile } from '../model/audio-file.js';
 import { createMarker, sortMarkers } from '../model/markers.js';
 import { openFiles, pickLocalFiles } from '../storage/files.js';
-import * as puter from '../storage/puter.js';
+import * as local from '../storage/local-folders.js';
 import { saveFlow } from '../export/save.js';
 import { createRecorder, inputErrorMessage } from '../record/recorder.js';
 import { recordingName } from '../record/take.js';
-import { mediaBrowserPanel, PUTER_DRAG_TYPE, resolveMediaItems } from '../panels/media-browser.js';
+import { mediaBrowserPanel, MEDIA_DRAG_TYPE, resolveMediaItems } from '../panels/media-browser.js';
 import { metadataPanel } from '../panels/metadata.js';
 import { parseMarkerText } from '../storage/markers-io.js';
 import { installAutosave, recoveryDialog, opfsAvailable } from '../storage/autosave-controller.js';
@@ -91,7 +91,8 @@ export function installIo(app) {
   app.preferenceSections = app.preferenceSections || [];
   app.preferenceSections.push({ category: 'audioHardware', title: 'Devices', keywords: 'input microphone device latency output', build: audioHardwarePrefs });
 
-  // Open Recent: Puter files, reopened through their path.
+  // Open Recent: files opened from a folder on this device, reopened through
+  // their path.
   app.recentMenuItems = () => {
     const list = app.prefs.get('recent') || [];
     if (!list.length) return [{ type: 'cmd', label: 'No Recent Files', enabled: false }];
@@ -101,11 +102,17 @@ export function installIo(app) {
         label: r.name,
         enabled: Boolean(r.path),
         run: async () => {
-          if (puter.sdk() && !puter.isSignedIn() && !(await puter.signIn().catch(() => false))) return;
           const open = app.documents.find((d) => d.source?.path === r.path);
           if (open) return app.activate(open);
-          const docs = await openFiles(app, [{ name: r.name, path: r.path }]);
-          if (!docs.length) app.prefs.set('recent', (app.prefs.get('recent') || []).filter((x) => x.path !== r.path));
+          try {
+            const roots = await local.loadRoots();
+            const file = await local.localFile(roots, r.path);
+            const docs = await openFiles(app, [file]);
+            if (!docs.length) app.prefs.set('recent', (app.prefs.get('recent') || []).filter((x) => x.path !== r.path));
+          } catch {
+            app.notify(`"${r.name}" is no longer available. It may have been moved or deleted.`, { error: true });
+            app.prefs.set('recent', (app.prefs.get('recent') || []).filter((x) => x.path !== r.path));
+          }
         },
       })),
       { type: 'sep' },
@@ -115,17 +122,17 @@ export function installIo(app) {
 
   // Drags from the Media Browser: open, or insert into a session when dropped on it.
   window.addEventListener('dragover', (e) => {
-    if ([...(e.dataTransfer?.types || [])].includes(PUTER_DRAG_TYPE)) {
+    if ([...(e.dataTransfer?.types || [])].includes(MEDIA_DRAG_TYPE)) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
     }
   });
   window.addEventListener('drop', async (e) => {
-    if (e.defaultPrevented || ![...(e.dataTransfer?.types || [])].includes(PUTER_DRAG_TYPE)) return;
+    if (e.defaultPrevented || ![...(e.dataTransfer?.types || [])].includes(MEDIA_DRAG_TYPE)) return;
     e.preventDefault();
     let items = [];
     try {
-      items = JSON.parse(e.dataTransfer.getData(PUTER_DRAG_TYPE));
+      items = JSON.parse(e.dataTransfer.getData(MEDIA_DRAG_TYPE));
     } catch {
       return;
     }
@@ -401,13 +408,7 @@ function audioHardwarePrefs(app) {
 
 async function importMarkers(app) {
   const doc = audio(app);
-  let file = null;
-  if (puter.sdk() && puter.isSignedIn()) {
-    const [item] = await puter.pickFiles({ multiple: false, accept: '.csv,.txt,.tsv' });
-    if (item) file = await item.read();
-  } else {
-    [file] = await pickLocalFiles({ accept: '.csv,.txt,.tsv,text/csv,text/plain,text/tab-separated-values', multiple: false });
-  }
+  const [file] = await pickLocalFiles({ accept: '.csv,.txt,.tsv,text/csv,text/plain,text/tab-separated-values', multiple: false });
   if (!file) return;
   const parsed = parseMarkerText(await file.text(), doc.sampleRate, { timeFormat: app.prefs.get('timeFormat'), ...app.timeOptions() });
   const inside = parsed.filter((m) => m.start <= doc.length).map((m) => createMarker({ ...m, duration: Math.min(m.duration, doc.length - m.start) }));
@@ -422,15 +423,14 @@ async function importMarkers(app) {
 
 // ------------------------------------------------------------ window close
 
+/**
+ * Warns before the tab closes with unsaved work, and asks the browser to keep
+ * the page alive while a dialog is open.
+ */
 function installWindowClose(app) {
-  const p = puter.sdk();
-  if (!p?.ui?.onWindowClose || puter.env() !== 'app') return;
-  p.ui.onWindowClose(async () => {
-    if (app.recorder.active) await app.recorder.stop();
-    for (const doc of app.documents.filter((d) => d.dirty)) {
-      if (!(await app.closeDocument(doc))) return; // Cancel keeps the window open
-    }
-    await app.autosave?.run().catch(() => {});
-    p.exit();
+  window.addEventListener('beforeunload', (e) => {
+    if (!app.documents.some((d) => d.dirty)) return;
+    e.preventDefault();
+    e.returnValue = '';
   });
 }

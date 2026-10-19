@@ -6,7 +6,6 @@ import { icon, appIcon } from './icons.js';
 import { createMenubar, resolveItems, openMenu } from './menubar.js';
 import { MENUS, commandMenuPaths, contextLabel } from './menus.js';
 import { Dock } from './dock.js';
-import { createAccount } from './account.js';
 import { openFiles } from '../storage/files.js';
 import { statusParts } from './status-fields.js';
 import { tabNames } from './workspace-manager.js';
@@ -27,9 +26,9 @@ export function createShell(app, root) {
     const items = MENUS.map((m) => ({ type: 'sub', label: m.label, items: resolveItems(app, m.submenu) }));
     openMenu(app, items, { x: r.left, y: r.bottom + 2, anchor: appMenuBtn, label: 'Application menu' });
   });
-  const title = h('div.app-title', h('span.app-logo', appIcon(20)), h('span.app-name', 'Audio Studio'));
+  const title = h('div.app-title', h('span.app-logo', appIcon(20)), h('span.app-name', 'audioslim', h('span.app-name-plus', '+')));
   const docTitle = h('div.doc-title');
-  const appbar = h('header.appbar', appMenuBtn, title, menubar, docTitle, h('div.spacer'), createAccount(app));
+  const appbar = h('header.appbar', appMenuBtn, title, menubar, docTitle, h('div.spacer'));
 
   // Toolbar ------------------------------------------------------------------
   const modeBtn = (kind, ic, label, cmd) =>
@@ -82,7 +81,7 @@ export function createShell(app, root) {
       else if (app.commands.get(b.dataset.cmd)?.checked) b.setAttribute('aria-pressed', String(app.commands.isChecked(b.dataset.cmd)));
     }
     docTitle.textContent = app.active ? `${app.active.name}${app.active.dirty ? ' *' : ''}` : '';
-    document.title = app.active ? `${app.active.name}${app.active.dirty ? ' *' : ''} - Audio Studio` : 'Audio Studio';
+    document.title = app.active ? `${app.active.name}${app.active.dirty ? ' *' : ''} - audioslim+` : 'audioslim+';
     // Workspace tabs.
     const names = tabNames(app);
     const current = app.prefs.get('workspace');
@@ -197,7 +196,7 @@ export function createShell(app, root) {
   });
 
   refresh();
-  announce('Audio Studio ready');
+  announce('audioslim+ ready');
   return { dock };
 }
 

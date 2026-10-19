@@ -1,12 +1,12 @@
 // Save As / Save a Copy / Export File dialog, modelled on a pro editor's
-// export dialog: file name, location (a Puter folder or this device), format,
-// sample type (with a Change... page for rate, channels, bit depth and
+// export dialog: file name, location (a folder on this device or a download),
+// format, sample type (with a Change... page for rate, channels, bit depth and
 // dither), format settings, metadata/markers and an estimated size.
 
 import { h } from '../lib/dom.js';
 import { icon } from '../ui/icons.js';
 import { openDialog } from '../ui/dialog.js';
-import * as puter from '../storage/puter.js';
+import { canPickFolder, chooseFolder, currentFolderName } from '../storage/device-save.js';
 import { FORMATS, getFormat, conformOptions, defaultOptions, estimateSize, formatBytesShort, describeSampleType, describeSettings, usesDither, withExtension, sanitizeFileName, channelLabel, COMMON_RATES, docBitDepth, formatForName } from './formats.js';
 import { DITHER_MODES } from '../audio/quantize.js';
 import { codecSupported } from './webcodecs.js';
@@ -30,7 +30,7 @@ export function webCodecsSupport() {
  */
 export function initialState(doc, { mode, frames, remembered = {}, includeMeta } = {}) {
   const meta = includeMeta ?? remembered.includeMeta !== false;
-  const sourceFormat = formatForName(doc.source?.path || doc.name);
+  const sourceFormat = formatForName(doc.source?.name || doc.source?.path || doc.name);
   const format = mode === 'saveAs' ? sourceFormat || remembered.format || 'wav' : remembered.format || sourceFormat || 'wav';
   const source = { sampleRate: doc.sampleRate, channels: doc.channelCount, bitDepth: docBitDepth(doc) };
   const base = defaultOptions(source, format);
@@ -47,16 +47,15 @@ export function initialState(doc, { mode, frames, remembered = {}, includeMeta }
 }
 
 /**
- * Shows the dialog. Resolves { fileName, location: { type: 'puter', dir } | { type: 'download' }, options } or null.
+ * Shows the dialog. Resolves { fileName, location: { type: 'device' } | { type: 'download' }, options } or null.
  */
 export async function exportFileDialog(app, doc, { mode = 'export', frames = doc.length, initialName } = {}) {
   const remembered = app.prefs.get('exportPrefs') || {};
   const state = initialState(doc, { mode, frames, remembered, includeMeta: app.prefs.get('exportMarkers') !== false });
   if (initialName) state.name = withExtension(initialName, state.options.format);
   const support = await webCodecsSupport();
-  const sdk = Boolean(puter.sdk());
-  let locationType = mode === 'download' || !sdk ? 'download' : app.prefs.get('exportLocation') === 'download' ? 'download' : 'puter';
-  let dir = app.prefs.get('exportFolder') || null;
+  const canPick = canPickFolder();
+  let locationType = mode === 'download' ? 'download' : app.prefs.get('exportLocation') === 'download' ? 'download' : 'device';
   let notes = [];
 
   // ---------------------------------------------------------------- controls
@@ -64,12 +63,13 @@ export async function exportFileDialog(app, doc, { mode = 'export', frames = doc
   const locSelect = h(
     'select.select',
     { 'aria-label': 'Location' },
-    h('option', { value: 'puter', disabled: !sdk }, sdk ? 'Puter folder' : 'Puter folder (not available offline)'),
-    h('option', { value: 'download' }, 'This device (download)'),
+    h('option', { value: 'device' }, 'This device'),
+    h('option', { value: 'download' }, 'Download'),
   );
   locSelect.value = locationType;
   const dirText = h('span.io-path', { title: '' });
   const browse = h('button.btn', { type: 'button' }, 'Browse...');
+  browse.hidden = !canPick;
   const locRow = h('div.io-loc', locSelect, h('div.io-loc-path', icon('folder', 14), dirText, browse));
   const formatSelect = h(
     'select.select',
@@ -130,9 +130,10 @@ export async function exportFileDialog(app, doc, { mode = 'export', frames = doc
   // ----------------------------------------------------------------- logic
   const fmt = () => getFormat(state.options.format);
   const showDir = () => {
-    const puterLoc = locSelect.value === 'puter';
-    locRow.querySelector('.io-loc-path').hidden = !puterLoc;
-    dirText.textContent = dir || `~/${puter.APP_DIR}`;
+    const toDevice = locSelect.value === 'device';
+    locRow.querySelector('.io-loc-path').hidden = !toDevice;
+    const folder = currentFolderName();
+    dirText.textContent = folder || 'Choose a location when you save';
     dirText.title = dirText.textContent;
   };
   const renderSettings = () => {
@@ -183,12 +184,8 @@ export async function exportFileDialog(app, doc, { mode = 'export', frames = doc
   browse.addEventListener('click', async () => {
     error.textContent = '';
     try {
-      if (!puter.isSignedIn() && !(await puter.signIn())) return;
-      const item = await puter.pickDirectory();
-      if (item?.path) {
-        dir = item.path;
-        showDir();
-      }
+      const name = await chooseFolder();
+      if (name) showDir();
     } catch (err) {
       error.textContent = err?.message || 'The folder could not be chosen.';
     }
@@ -246,13 +243,6 @@ export async function exportFileDialog(app, doc, { mode = 'export', frames = doc
   };
 
   refresh();
-  // Resolve the default Puter folder in the background.
-  if (!dir && sdk && puter.isSignedIn()) puter.appDir().then((d) => {
-    if (!dir) {
-      dir = d;
-      showDir();
-    }
-  });
 
   // Escape on the sample type page goes back instead of closing the dialog.
   // Window capture runs before the dialog's own document-level handler.
@@ -293,7 +283,7 @@ export async function exportFileDialog(app, doc, { mode = 'export', frames = doc
   window.removeEventListener('keydown', escape, true);
   if (result !== 'ok') return null;
   const fileName = withExtension(sanitizeFileName(nameInput.value), state.options.format);
-  const location = locSelect.value === 'puter' ? { type: 'puter', dir: dir || null } : { type: 'download' };
+  const location = locSelect.value === 'device' ? { type: 'device' } : { type: 'download' };
   // Remember choices for next time.
   app.prefs.set('exportPrefs', {
     format: state.options.format,
@@ -302,7 +292,6 @@ export async function exportFileDialog(app, doc, { mode = 'export', frames = doc
     settings: { ...(remembered.settings || {}), [state.options.format]: state.options.settings },
   });
   if (mode !== 'download') app.prefs.set('exportLocation', location.type);
-  if (location.dir) app.prefs.set('exportFolder', location.dir);
   return { fileName, location, options: state.options };
 }
 
