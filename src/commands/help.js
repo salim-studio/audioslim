@@ -5,8 +5,8 @@ import { h } from '../lib/dom.js';
 import { icon } from '../ui/icons.js';
 import { openDialog } from '../ui/dialog.js';
 
-const REPO = 'https://github.com/HeyPuter/everything';
-export const SOURCE_URL = `${REPO}/tree/main/src/audio-studio`;
+const REPO = 'https://github.com/salim-studio/audioslim';
+export const SOURCE_URL = REPO;
 export const ISSUES_URL = `${REPO}/issues/new?labels=audio-studio&title=${encodeURIComponent('Audio Studio: ')}`;
 
 /** Getting Started topics: a title, an icon and a few steps, each naming the commands it uses. */

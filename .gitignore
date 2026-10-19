@@ -1,2 +1,4 @@
 wasm/target/
 .dev-media/
+node_modules/
+dist/

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import puterLocalhost from '../../dev/puter-localhost.mjs';
+import puterLocalhost from './dev/puter-localhost.mjs';
 
 export default defineConfig({
   plugins: [puterLocalhost('audio-studio')],

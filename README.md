@@ -4,6 +4,10 @@ A waveform and multitrack audio editor for the browser, built on [Puter](https:/
 
 An open-source alternative to Adobe Audition. No framework: vanilla JavaScript modules built with Vite. Puter.js is the only backend.
 
+**Live demo:** <https://salim-studio.github.io/audioslim/>
+
+> Forked from `src/audio-studio` in [HeyPuter/everything](https://github.com/HeyPuter/everything).
+
 ## What it does
 
 - **Waveform editor**: sample-accurate editing with five clipboards, zero-crossing adjustment, markers (cue, range, subclip, cart, CD) edited in place, spectral frequency and pitch displays with marquee, lasso, brush and healing tools, and a Preview Editor that shows an effect's result before it is applied.
@@ -40,6 +44,12 @@ npm run build:wasm # rebuilds src/audio/dsp.wasm (needs Rust 1.85.1 with wasm32-
 
 In development, `window.as` is the app and `as.openDev(['name.wav'])` opens test files from the gitignored `.dev-media/` folder.
 
+## Deployment
+
+`main` is published to GitHub Pages by `.github/workflows/deploy-pages.yml`: the workflow installs with `npm ci`, builds to `dist/`, and uploads it as the Pages artifact. The Vite `base` is relative (`./`), so the build works unchanged under the repository sub-path.
+
+The site is served at <https://salim-studio.github.io/audioslim/>. To publish a change, push to `main`; to publish manually, run the **Deploy to GitHub Pages** workflow.
+
 ## Third-party
 
 - [Lucide](https://lucide.dev) icons (ISC), plus original glyphs in `src/ui/icons.js`.
@@ -47,4 +57,4 @@ In development, `window.as` is the app and `as.openDev(['name.wav'])` opens test
 
 ## License
 
-This repository, including all its contents, sub-projects, modules, and components, is licensed under [MIT](../../LICENSE) unless explicitly stated otherwise. Third-party libraries included in this repository may be subject to their own licenses.
+This repository, including all its contents, sub-projects, modules, and components, is licensed under [MIT](./LICENSE) unless explicitly stated otherwise. Third-party libraries included in this repository may be subject to their own licenses.
