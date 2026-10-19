@@ -10,7 +10,6 @@ import { createMarker, nextMarkerName, sortMarkers, MARKER_TYPES } from '../mode
 import { openDialog, confirmDialog } from '../ui/dialog.js';
 import { openFiles, pickLocalFiles, openFromDevice, saveDocument, encodeDocument, downloadBlob } from '../storage/files.js';
 import { TIME_FORMATS, parseTime } from '../lib/time.js';
-import { appIcon } from '../ui/icons.js';
 import { dsp } from '../audio/dsp.js';
 import { baseName } from '../audio/decode.js';
 import { shortcutsDialog } from '../ui/shortcuts-dialog.js';
@@ -127,7 +126,8 @@ function aboutDialog() {
     title: 'About audioslim+',
     body: h(
       'div.about',
-      h('div.about-logo', appIcon(64)),
+      // The wordmark, in the variant that reads on this theme.
+      h('div.about-logo', h('img.about-wordmark', { src: './logo.png', alt: 'audioslim+' }), h('img.about-wordmark-light', { src: './logo-dark.png', alt: 'audioslim+' })),
       h('p', 'audioslim+ is a waveform and multitrack audio editor that runs in your browser. Everything is processed on your device: files are read from and written to this computer, never to a server.'),
       h('p.muted', 'Signal processing runs in WebAssembly compiled from Rust, playback in an AudioWorklet, and waveforms and spectrograms are drawn with WebGL2.'),
       h('p.muted', 'Icons from Lucide (ISC license) plus original glyphs.'),

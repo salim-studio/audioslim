@@ -1,12 +1,23 @@
-# audioslim+
+<p align="center">
+  <img src="public/logo.png" alt="audioslim+" width="380">
+</p>
 
-A waveform and multitrack audio editor for the browser. Record, edit, restore, mix and master audio with a docked panel workspace, studio effects and spectral editing.
+<p align="center">
+  <b>Waveform &amp; multitrack audio editor for the browser.</b><br>
+  Record, edit, restore, mix and master audio — with a docked panel workspace,
+  studio effects and spectral editing.<br>
+  Everything runs on your own device: no account, no server, no upload.
+</p>
 
-Everything runs on your own device. Files are read from and written to your computer — there is no account, no server and no upload.
+<p align="center">
+  <a href="https://salim-studio.github.io/audioslim/"><b>Live demo →</b></a>
+  &nbsp;·&nbsp;
+  <a href="#what-it-does">Features</a>
+  &nbsp;·&nbsp;
+  <a href="#development">Build it yourself</a>
+</p>
 
-**Live demo:** <https://salim-studio.github.io/audioslim/>
-
-An open-source alternative to Adobe Audition. No framework: vanilla JavaScript modules built with Vite, with the signal processing written in Rust and compiled to WebAssembly.
+![The audioslim+ waveform editor](public/screenshot.png)
 
 ## What it does
 
@@ -15,6 +26,11 @@ An open-source alternative to Adobe Audition. No framework: vanilla JavaScript m
 - **Effects**: amplitude, delay, filter and EQ, modulation, restoration (noise prints, sound models, click/pop elimination, hum, reverb and hiss removal), reverb, special and time/pitch processors, all in WebAssembly, usable live in the Effects Rack and track chains or applied to a selection, with presets and Favorites.
 - **Analysis**: frequency analysis, amplitude statistics, phase meter, loudness measurement and matching, diagnostics.
 - **Workspace**: docked panels (Files, Media Browser, Markers, Playlist, Mixer, Tracks, Track Panner, Time, Zoom, Transport, Tools, Events, Video...) arranged in saved workspaces; categorized Preferences; MIDI control surfaces; batch processing; JavaScript automation scripts.
+
+![The audioslim+ multitrack editor](public/screenshot-multitrack.png)
+
+The Multitrack editor: clips on tracks with fades, crossfades and envelopes,
+buses and sends, per-track effect chains, automation and a full mixer.
 
 ## Working with files
 
@@ -43,7 +59,8 @@ An open-source alternative to Adobe Audition. No framework: vanilla JavaScript m
 | Multitrack | `src/multitrack/`, `src/model/session*.js` | Session model and edits, graph building (routing, sends, EQ), recording, stretching, alignment, templates. |
 | Storage | `src/storage/` | Device files and folders (File System Access API), autosave and session backups in the origin private file system, preferences in `localStorage`. |
 | Hardware | `src/control-surface/` | Web MIDI control surfaces: a DAW-controller protocol and learned mappings. |
-| Branding | `tools/make-brand-assets.py` | Draws the audioslim+ mark and writes every icon in `public/` and the repository root. |
+| Branding | `tools/make-brand-assets.py` | Draws the audioslim+ mark, the wordmark and every icon in `public/` and the repository root. |
+| Screenshots | `tools/make-demo-audio.mjs` | Generates the demo audio the README screenshots are taken with. |
 
 ## Development
 
@@ -61,6 +78,14 @@ The brand assets are generated, not hand-drawn. After changing `tools/make-brand
 
 ```sh
 python tools/make-brand-assets.py
+```
+
+It writes the mark, the wordmark (`public/logo.png`), the icon set and the
+social card. The README screenshots are taken from the running app, with the
+demo audio built by:
+
+```sh
+node tools/make-demo-audio.mjs .dev-media/demo.wav
 ```
 
 ## Deployment

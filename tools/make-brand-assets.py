@@ -1,4 +1,4 @@
-"""Generates the audioslim+ brand mark and its icon set.
+"""Generates the audioslim+ brand mark, its icon set and the wordmark.
 
 The mark is a filled waveform whose amplitude tapers from left to right (the
 wave gets "slimmer") paired with a plus sign. Everything is drawn at 8x and
@@ -23,6 +23,13 @@ TILE_EDGE = (255, 255, 255, 28)
 LIME = (231, 255, 112)
 EMERALD = (38, 214, 143)
 INK = (240, 244, 238)
+GRAPHITE = (20, 24, 29)
+BRAND_DEEP = (79, 143, 13)  # the brand accent on a light background
+
+# Wordmark typeface. Montserrat is a geometric sans that suits the mark; the
+# app itself uses the system UI font.
+WORDMARK_FONT = "C:/Windows/Fonts/Montserrat-SemiBold.ttf"
+WORDMARK_FONT_BOLD = "C:/Windows/Fonts/Montserrat-Bold.ttf"
 
 
 def lerp(a, b, t):
@@ -152,6 +159,51 @@ def build_social(path):
     print(f"  {os.path.basename(path):32s} 1200x630")
 
 
+def build_wordmark(path, dark=True):
+    """The horizontal logo lockup: the mark in its tile, then the name.
+
+    On a light background the name is graphite with a deep green plus; on a
+    dark one it is off-white with the brand lime.
+    """
+    scale = 4
+    tile = 168 * scale
+    text_size = 84 * scale
+    gap = 26 * scale
+    pad = 8 * scale
+
+    try:
+        font = ImageFont.truetype(WORDMARK_FONT, text_size)
+        font_plus = ImageFont.truetype(WORDMARK_FONT_BOLD, text_size)
+    except Exception:
+        font = font_plus = ImageFont.load_default()
+
+    name = "audioslim"
+    ascent, descent = font.getmetrics()
+    w_name = int(font.getlength(name))
+    w_plus = int(font_plus.getlength("+"))
+    text_h = ascent + descent
+
+    width = pad * 2 + tile + gap + w_name + w_plus
+    height = pad * 2 + max(tile, text_h)
+
+    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+
+    # The mark, in its own tile.
+    mark = draw_mark(tile, tile=True)
+    img.alpha_composite(mark, (pad, (height - tile) // 2))
+
+    # The name, vertically centred on the text's own box.
+    text_y = (height - text_h) // 2 + ascent
+    x = pad + tile + gap
+    d.text((x, text_y), name, font=font, fill=(GRAPHITE if not dark else INK) + (255,), anchor="ls")
+    d.text((x + w_name, text_y), "+", font=font_plus, fill=(BRAND_DEEP if not dark else LIME) + (255,), anchor="ls")
+
+    img = img.resize((width // scale, height // scale), Image.LANCZOS)
+    img.save(path, "PNG", optimize=True)
+    print(f"  {os.path.basename(path):32s} {img.size[0]}x{img.size[1]}")
+
+
 def main():
     pub = os.path.abspath(PUB)
     os.makedirs(pub, exist_ok=True)
@@ -176,12 +228,16 @@ def main():
     # Apple touch icons are masked by the OS, so no rounded tile is drawn.
     write_png(draw_mark(180, tile=False), os.path.join(pub, "apple-touch-icon.png"))
 
+    build_wordmark(os.path.join(pub, "logo.png"), dark=False)
+    build_wordmark(os.path.join(pub, "logo-dark.png"), dark=True)
+
     build_social(os.path.join(pub, "social-graph.jpg"))
 
     root = os.path.abspath(ROOT)
     print("root/")
     write_png(draw_mark(512, tile=True), os.path.join(root, "icon.png"))
     write_png(draw_mark(128, tile=True), os.path.join(root, "icon-128.png"))
+    write_png(draw_mark(512, tile=True), os.path.join(root, "logo.png"))
 
 
 if __name__ == "__main__":

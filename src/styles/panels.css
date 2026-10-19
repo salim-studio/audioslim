@@ -992,6 +992,22 @@ kbd {
   margin-bottom: 12px;
 }
 
+/* The wordmark, in the variant that reads on the current theme. */
+.about-wordmark,
+.about-wordmark-light {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+
+:root[data-theme-resolved='dark'] .about-wordmark {
+  display: none;
+}
+
+:root[data-theme-resolved='light'] .about-wordmark-light {
+  display: none;
+}
+
 .about p {
   margin: 0 0 8px;
   max-width: 460px;
