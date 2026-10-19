@@ -237,7 +237,7 @@ def main():
     print("root/")
     write_png(draw_mark(512, tile=True), os.path.join(root, "icon.png"))
     write_png(draw_mark(128, tile=True), os.path.join(root, "icon-128.png"))
-    write_png(draw_mark(512, tile=True), os.path.join(root, "logo.png"))
+    build_wordmark(os.path.join(root, "logo.png"), dark=False)
 
 
 if __name__ == "__main__":
