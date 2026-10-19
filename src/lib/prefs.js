@@ -56,7 +56,7 @@ export const DEFAULTS = {
   zoomStep: 50, // percent of the view each Zoom In/Out (Time) step removes
   dismissedNotices: [], // notice ids turned off with "Don't show this again"
   // Appearance
-  accentColor: 'audioslim',
+  accentColor: 'blue',
   waveColors: null, // { wave, selection, background } or null for the theme colors
   waveColorPresets: [], // [{ name, wave, selection, background, playhead, cue, subclip, cart, cd }]
   uiBrightness: 0, // -100 (darker) .. 100 (lighter) for panels and backgrounds

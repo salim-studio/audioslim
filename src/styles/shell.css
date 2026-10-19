@@ -247,7 +247,7 @@
   flex: 1;
   min-height: 0;
   min-width: 0;
-  padding: 3px;
+  padding: 0;
   gap: 0;
 }
 
@@ -294,8 +294,8 @@
   flex-direction: column;
   min-width: 60px;
   min-height: 48px;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: 0;
   background: var(--bg-panel);
   overflow: hidden;
 }
@@ -313,7 +313,8 @@
   flex: none;
   overflow-x: auto;
   scrollbar-width: none;
-  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-panel-alt);
+  border-bottom: 1px solid var(--border);
 }
 
 .panel-tabs::-webkit-scrollbar {

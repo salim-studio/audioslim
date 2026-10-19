@@ -91,7 +91,7 @@ svg.icon {
   gap: 6px;
   height: var(--control);
   padding: 0 10px;
-  border: 1px solid var(--divider);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-raised);
   color: var(--text);
@@ -189,7 +189,7 @@ svg.icon {
   height: var(--control);
   min-width: 0;
   padding: 0 6px;
-  border: 1px solid var(--divider);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   background: var(--bg-input);
   color: var(--text);

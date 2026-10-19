@@ -293,7 +293,7 @@ describe('appearance', () => {
     // The theme's own accent needs no overrides.
     expect(appearanceVars({ get: (k) => (k === 'accentColor' ? 'blue' : DEFAULTS[k]) }, 'dark')).toEqual({});
     // The brand accent does.
-    expect(appearanceVars({ get: (k) => DEFAULTS[k] }, 'dark')['--accent']).toBe('#86d93f');
+    expect(appearanceVars({ get: (k) => (k === 'accentColor' ? 'audioslim' : DEFAULTS[k]) }, 'dark')['--accent']).toBe('#86d93f');
   });
 });
 

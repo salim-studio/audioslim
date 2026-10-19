@@ -9,12 +9,12 @@ import { resolvedTheme, parseColor, cssVar } from './theme.js';
 
 /**
  * Accent presets: [dark theme, light theme] colors, and the text color that
- * reads on top of them. 'audioslim+' is the brand look; 'blue' is the
- * theme's own default.
+ * reads on top of them. 'blue' is the theme's own default, the blue of a
+ * Photoshop workspace.
  */
 export const ACCENTS = [
+  { id: 'blue', label: 'Blue', dark: '#1473e6', light: '#1473e6' },
   { id: 'audioslim', label: 'audioslim+', dark: '#86d93f', light: '#4f8f0d', text: { dark: '#16210a', light: '#ffffff' } },
-  { id: 'blue', label: 'Blue', dark: '#2d8ceb', light: '#1473e6' },
   { id: 'violet', label: 'Violet', dark: '#8f6cf0', light: '#6d48d8' },
   { id: 'teal', label: 'Teal', dark: '#1fb5a5', light: '#0d8478' },
   { id: 'amber', label: 'Amber', dark: '#e0962b', light: '#b06a0b' },

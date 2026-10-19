@@ -1,6 +1,7 @@
-/* Design tokens. Dark is the default look of a pro audio workspace; light keeps
-   the same hierarchy with inverted surfaces. data-theme-resolved is set by
-   theme.js before first paint (see index.html). */
+/* Design tokens. The dark theme is the classic Photoshop workspace: a
+   medium-dark gray pasteboard, slightly lighter panels, flat gray controls and
+   a blue accent. Light keeps the same hierarchy with inverted surfaces.
+   data-theme-resolved is set by theme.js before first paint (see index.html). */
 
 :root {
   --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -10,50 +11,51 @@
   --fs-md: 12px;
   --fs-lg: 14px;
   --fs-xl: 18px;
-  --radius-sm: 3px;
-  --radius: 4px;
-  --radius-lg: 8px;
+  --radius-sm: 2px;
+  --radius: 2px;
+  --radius-lg: 4px;
   --row: 24px;
   --control: 22px;
   --tab: 30px;
   --gap: 6px;
-  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease: cubic-bezier(0.2, 0, 1);
 }
 
 :root,
 :root[data-theme-resolved='dark'] {
   color-scheme: dark;
-  --bg-app: #161616;
-  --bg-panel: #232323;
-  --bg-panel-alt: #1e1e1e;
-  --bg-raised: #2c2c2c;
-  --bg-input: #191919;
-  --bg-hover: #303030;
-  --bg-active: #3a3a3a;
-  --bg-editor: #050505;
-  --bg-track: #1c1c1c;
-  --bg-track-alt: #202020;
-  --bg-ruler: #1a1a1a;
-  --border: #111111;
-  --border-soft: #2f2f2f;
-  --divider: #383838;
-  --text: #d6d6d6;
-  --text-strong: #f2f2f2;
-  --text-dim: #a3a3a3;
-  --text-faint: #6f6f6f;
-  --accent: #2d8ceb;
-  --accent-strong: #4aa3f5;
+  /* The workspace behind the panels, and the pasteboard around the audio. */
+  --bg-app: #1e1e1e;
+  --bg-panel: #2b2b2b;
+  --bg-panel-alt: #333333;
+  --bg-raised: #3d3d3d;
+  --bg-input: #1e1e1e;
+  --bg-hover: #474747;
+  --bg-active: #2b2b2b;
+  --bg-editor: #1e1e1e;
+  --bg-track: #2b2b2b;
+  --bg-track-alt: #303030;
+  --bg-ruler: #262626;
+  --border: #181818;
+  --border-soft: #3d3d3d;
+  --divider: #454545;
+  --text: #d4d4d4;
+  --text-strong: #f0f0f0;
+  --text-dim: #a0a0a0;
+  --text-faint: #7a7a7a;
+  --accent: #1473e6;
+  --accent-strong: #31a8ff;
   --accent-text: #ffffff;
-  --accent-soft: rgba(45, 140, 235, 0.22);
-  --hot: #4ea6f2;
-  --focus: #5aaeff;
+  --accent-soft: rgba(20, 115, 230, 0.24);
+  --hot: #4aa3f5;
+  --focus: #31a8ff;
   --wave: #3fe0a5;
   --wave-2: #6cb6ff;
   --wave-3: #f2b04c;
   --wave-4: #e47ad6;
   --wave-dim: #227a5b;
   --wave-sel: #b7ffe4;
-  --wave-center: #1b3d31;
+  --wave-center: #24443a;
   --grid: rgba(255, 255, 255, 0.06);
   --grid-strong: rgba(255, 255, 255, 0.12);
   --wave-grid: rgba(52, 199, 89, 0.16);
@@ -70,34 +72,34 @@
   --meter-green: #2fbf57;
   --meter-yellow: #d6c33a;
   --meter-red: #e5484d;
-  --meter-bg: #0d0d0d;
+  --meter-bg: #262626;
   --envelope-vol: #e5d14a;
   --envelope-pan: #4aa3f5;
   --clip-header: rgba(255, 255, 255, 0.09);
-  --overlay: rgba(0, 0, 0, 0.55);
-  --scrollbar: #444;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --scrollbar: #5a5a5a;
 }
 
 :root[data-theme-resolved='light'] {
   color-scheme: light;
   --bg-app: #d4d4d4;
-  --bg-panel: #ececec;
-  --bg-panel-alt: #e4e4e4;
+  --bg-panel: #e8e8e8;
+  --bg-panel-alt: #f0f0f0;
   --bg-raised: #f7f7f7;
   --bg-input: #ffffff;
-  --bg-hover: #dddddd;
-  --bg-active: #d0d0d0;
-  --bg-editor: #fbfbfb;
+  --bg-hover: #dadada;
+  --bg-active: #c9c9c9;
+  --bg-editor: #ededed;
   --bg-track: #f3f3f3;
   --bg-track-alt: #eeeeee;
-  --bg-ruler: #e6e6e6;
-  --border: #c2c2c2;
-  --border-soft: #d6d6d6;
-  --divider: #c8c8c8;
-  --text: #2a2a2a;
+  --bg-ruler: #e2e2e2;
+  --border: #b8b8b8;
+  --border-soft: #c8c8c8;
+  --divider: #bcbcbc;
+  --text: #2b2b2b;
   --text-strong: #111111;
-  --text-dim: #555555;
-  --text-faint: #6b6b6b;
+  --text-dim: #5a5a5a;
+  --text-faint: #757575;
   --accent: #1473e6;
   --accent-strong: #0d66d0;
   --accent-text: #ffffff;
@@ -132,7 +134,7 @@
   --envelope-pan: #0d66d0;
   --clip-header: rgba(0, 0, 0, 0.07);
   --overlay: rgba(0, 0, 0, 0.32);
-  --scrollbar: #b0b0b0;
+  --scrollbar: #a8a8a8;
 }
 
 @media (pointer: coarse) {

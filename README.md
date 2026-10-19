@@ -26,6 +26,7 @@
 - **Effects**: amplitude, delay, filter and EQ, modulation, restoration (noise prints, sound models, click/pop elimination, hum, reverb and hiss removal), reverb, special and time/pitch processors, all in WebAssembly, usable live in the Effects Rack and track chains or applied to a selection, with presets and Favorites.
 - **Analysis**: frequency analysis, amplitude statistics, phase meter, loudness measurement and matching, diagnostics.
 - **Workspace**: docked panels (Files, Media Browser, Markers, Playlist, Mixer, Tracks, Track Panner, Time, Zoom, Transport, Tools, Events, Video...) arranged in saved workspaces; categorized Preferences; MIDI control surfaces; batch processing; JavaScript automation scripts.
+- **Appearance**: a dark workspace in the style of a Photoshop canvas — a gray pasteboard, flat gray controls and a blue accent. **Preferences > Appearance** switches between light and dark, picks the accent colour, sets the waveform and marker colours, and lightens or darkens the interface.
 
 ![The audioslim+ multitrack editor](public/screenshot-multitrack.png)
 
